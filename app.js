@@ -7,27 +7,111 @@
     ? structuredClone(value)
     : JSON.parse(JSON.stringify(value));
 
+  const REMOTE_SCORER_PREFIX = "remote-scorer-";
+  const SCORER_NAME_ALIASES = Object.freeze({
+    "k mbappe": "Kylian Mbappé",
+    "kylian mbappe": "Kylian Mbappé",
+    "l messi": "Lionel Messi",
+    "lionel messi": "Lionel Messi",
+    "e haaland": "Erling Haaland",
+    "erling haaland": "Erling Haaland",
+    "h kane": "Harry Kane",
+    "harry kane": "Harry Kane",
+    "o dembele": "Ousmane Dembélé",
+    "ousmane dembele": "Ousmane Dembélé",
+    "v junior": "Vinícius Júnior",
+    "vinicius jr": "Vinícius Júnior",
+    "vinicius junior": "Vinícius Júnior",
+    "i sarr": "Ismaïla Sarr",
+    "ismaila sarr": "Ismaïla Sarr",
+    "d undav": "Deniz Undav",
+    "deniz undav": "Deniz Undav",
+    "j manzambi": "Johan Manzambi",
+    "johan manzambi": "Johan Manzambi",
+    "j quinones": "Julián Quiñones",
+    "julian quinones": "Julián Quiñones",
+    "m oyarzabal": "Mikel Oyarzabal",
+    "mikel oyarzabal": "Mikel Oyarzabal",
+    "gvnchalv ramvs": "Gonçalo Ramos",
+    "goncalo ramos": "Gonçalo Ramos",
+    "c ronaldo": "Cristiano Ronaldo",
+    "cristiano ronaldo": "Cristiano Ronaldo"
+  });
+
+  function canonicalPlayerName(value) {
+    const raw = String(value ?? "").trim();
+    if (!raw || /[{}\[\]]/.test(raw) || /[;,|]/.test(raw) || /["“”]{2,}/.test(raw)) return "";
+    const cleaned = raw
+      .replace(/^["'“”‘’]+|["'“”‘’]+$/g, "")
+      .replace(/\s*\+\s*$/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (!cleaned) return "";
+    return SCORER_NAME_ALIASES[normalizeNameKey(cleaned)] || cleaned;
+  }
+
+  function isCompletePlayerName(value) {
+    const name = String(value || "").trim();
+    if (!name || name.length > 70 || /[{}\[\],;|]/.test(name)) return false;
+    const parts = name.split(/\s+/).filter(Boolean);
+    if (parts.length < 2 || parts.length > 7) return false;
+    if (parts.some(part => /^[\p{L}]\.?$/u.test(part))) return false;
+    return parts.every(part => /^[\p{L}][\p{L}\p{M}'’.-]*$/u.test(part));
+  }
+
+  function scorerKey(name, teamCode) {
+    return `${normalizeNameKey(name)}|${String(teamCode || "").toUpperCase()}`;
+  }
+
   function normalizeScorers(items) {
-    return (items || []).map((item, index) => ({
-      id: item.id || `scorer-${item.team || "team"}-${index + 1}`,
-      name: String(item.name || "Jogador").trim(),
-      team: item.team || null,
-      goals: safeNumber(item.goals) ?? 0,
-      image: item.image || null
-    }));
+    const merged = new Map();
+    const add = (item, index, fromSeed = false) => {
+      const name = canonicalPlayerName(item?.name);
+      const teamCode = String(item?.team || "").toUpperCase();
+      if (!isCompletePlayerName(name) || !team(teamCode)) return;
+      const key = scorerKey(name, teamCode);
+      const candidate = {
+        id: item?.id || `scorer-${teamCode || "team"}-${index + 1}`,
+        name,
+        team: teamCode,
+        goals: safeNumber(item?.goals) ?? 0,
+        image: item?.image || null
+      };
+      const current = merged.get(key);
+      if (!current) {
+        merged.set(key, candidate);
+        return;
+      }
+      if (!fromSeed) {
+        current.id = candidate.id;
+        current.goals = candidate.goals;
+        current.image = candidate.image || current.image;
+      } else if (!current.image && candidate.image) {
+        current.image = candidate.image;
+      }
+    };
+
+    (baseData.topScorers || []).forEach((item, index) => add(item, index, true));
+    (Array.isArray(items) ? items : []).forEach((item, index) => add(item, index, false));
+    return [...merged.values()];
   }
 
   function normalizeGoalEvents(items) {
     const source = items && typeof items === "object" ? items : {};
     return Object.fromEntries(Object.entries(source).map(([matchId, events]) => [
       matchId,
-      (Array.isArray(events) ? events : []).map((event, index) => ({
-        id: event.id || `goal-${matchId}-${index + 1}`,
-        team: event.team || null,
-        player: String(event.player || "Jogador").trim(),
-        minute: String(event.minute || "").trim(),
-        type: event.type || "goal"
-      }))
+      (Array.isArray(events) ? events : []).map((event, index) => {
+        const player = canonicalPlayerName(event?.player);
+        const teamCode = String(event?.team || "").toUpperCase();
+        if (!isCompletePlayerName(player) || !team(teamCode)) return null;
+        return {
+          id: event.id || `goal-${matchId}-${index + 1}`,
+          team: teamCode,
+          player,
+          minute: String(event.minute || "").trim(),
+          type: event.type || "goal"
+        };
+      }).filter(Boolean)
     ]));
   }
 
@@ -37,6 +121,8 @@
     scorers: normalizeScorers(baseData.topScorers || []),
     goalEvents: normalizeGoalEvents(baseData.goalEvents || {})
   };
+
+  applyManualMatchEventOverrides();
 
   let wasmWinner = null;
   let bracketZoom = Number(localStorage.getItem("copa2026-bracket-zoom-v2")) || 1;
@@ -91,6 +177,7 @@
     "ismaila sarr": "assets/scorer-ismaila-sarr.jpg",
     "johan manzambi": "assets/scorer-johan-manzambi.jpg",
     "julian quinones": "assets/scorer-julian-quinones.jpg",
+    "mikel oyarzabal": "assets/scorer-mikel-oyarzabal.jpg",
     "kylian mbappe": "assets/scorer-kylian-mbappe.jpg",
     "lionel messi": "assets/scorer-lionel-messi.jpg",
     "vinicius junior": "assets/scorer-vinicius-junior.jpg"
@@ -127,6 +214,16 @@
       (b.goals ?? 0) - (a.goals ?? 0)
       || String(a.name).localeCompare(String(b.name), "pt-BR")
     );
+  }
+
+  function carouselScorers() {
+    const activeTeams = getActiveTeamCodes();
+    const withImages = sortedScorers().map((item, index) => ({ item, index })).filter(({ item }) => scorerImageFor(item));
+    return withImages.sort((a, b) =>
+      Number(activeTeams.has(b.item.team)) - Number(activeTeams.has(a.item.team))
+      || (b.item.goals ?? 0) - (a.item.goals ?? 0)
+      || a.index - b.index
+    ).map(({ item }) => item).slice(0, 10);
   }
 
   function safeNumber(value) {
@@ -281,12 +378,28 @@
         state.knockoutMatches = clone(baseData.knockoutMatches);
         state.scorers = normalizeScorers(baseData.topScorers || []);
         state.goalEvents = normalizeGoalEvents(baseData.goalEvents || {});
+      applyManualMatchEventOverrides();
         return;
       }
 
       restoreMatchesFromSaved(saved);
-      if (Array.isArray(saved.scorers)) state.scorers = normalizeScorers(saved.scorers);
-      if (saved.goalEvents && typeof saved.goalEvents === "object") state.goalEvents = normalizeGoalEvents(saved.goalEvents);
+      const isLegacyScorerData = Number(saved.version || 0) < 6.2;
+      if (Array.isArray(saved.scorers)) {
+        const scorerSource = isLegacyScorerData
+          ? saved.scorers.filter(item => !String(item?.id || "").startsWith(REMOTE_SCORER_PREFIX))
+          : saved.scorers;
+        state.scorers = normalizeScorers(scorerSource);
+      }
+      if (saved.goalEvents && typeof saved.goalEvents === "object") {
+        state.goalEvents = isLegacyScorerData
+          ? normalizeGoalEvents(baseData.goalEvents || {})
+          : normalizeGoalEvents(saved.goalEvents);
+      }
+      if (isLegacyScorerData) {
+        updateScorersFromGoalEvents();
+        saveState();
+        console.warn("A artilharia e os eventos antigos foram higienizados automaticamente para remover agregados inválidos.");
+      }
     } catch (error) {
       console.warn("Não foi possível carregar o backup local.", error);
     }
@@ -294,7 +407,7 @@
 
   function saveState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      version: 6.1,
+      version: 6.2,
       savedAt: new Date().toISOString(),
       groupMatches: state.groupMatches,
       knockoutMatches: state.knockoutMatches,
@@ -404,18 +517,31 @@
       .sort((a, b) => goalMinuteValue(a.minute) - goalMinuteValue(b.minute));
   }
 
+  function applyManualMatchEventOverrides() {
+    Object.entries(MANUAL_MATCH_EVENT_OVERRIDES).forEach(([matchId, events]) => {
+      const normalized = normalizeGoalEvents({ [matchId]: events })[matchId] || [];
+      const existing = Array.isArray(state.goalEvents[matchId]) ? state.goalEvents[matchId] : [];
+      const preserved = existing.filter(event => !normalized.some(item => scorerKey(item.player, item.team) === scorerKey(event.player, event.team) && String(item.minute || "") === String(event.minute || "")));
+      state.goalEvents[matchId] = normalizeGoalEvents({ [matchId]: [...preserved, ...normalized] })[matchId] || [];
+    });
+  }
+
   function renderGoalTooltip(match, teamCode) {
     if (!teamCode) return "";
     const events = goalEventsFor(match.id, teamCode);
     const score = teamCode === match.home ? match.hg : match.ag;
     const selection = team(teamCode);
     const content = events.length
-      ? `<ul>${events.map(event => `<li><span>⚽ ${escapeHtml(event.player)}${event.type === "penalty" ? " (pên.)" : ""}</span><strong>${escapeHtml(event.minute)}'</strong></li>`).join("")}</ul>`
+      ? `<ul>${events.map(event => `<li><span>⚽ ${escapeHtml(event.player)}${event.type === "penalty" ? " (pên.)" : ""}</span>${event.minute ? `<strong>${escapeHtml(event.minute)}'</strong>` : ""}</li>`).join("")}</ul>`
       : `<p>${score === 0 ? "Não marcou gols nesta partida." : "Autores dos gols ainda não cadastrados."}</p>`;
+    const shootout = match.hg !== null && match.ag !== null && match.hg === match.ag && match.hp !== null && match.ap !== null
+      ? `<small>Decisão nos pênaltis: ${match.hp} × ${match.ap}</small>`
+      : "";
     return `<div class="goal-tooltip" role="tooltip">
       <div class="goal-tooltip__title"><span>${selection?.flag || "⚽"}</span><strong>${escapeHtml(selection?.name || teamCode)}</strong></div>
       ${content}
       <small>${events.length} ${events.length === 1 ? "gol cadastrado" : "gols cadastrados"}</small>
+      ${shootout}
     </div>`;
   }
 
@@ -653,21 +779,76 @@
     return Number.isFinite(n) && n >= 0 ? Math.trunc(n) : null;
   }
 
+  function explodeRemoteScorerValue(value) {
+    if (value === null || value === undefined) return [];
+    if (Array.isArray(value)) return value.flatMap(explodeRemoteScorerValue);
+    if (typeof value === "object") {
+      const direct = value.player ?? value.name ?? value.scorer ?? value.player_name;
+      if (direct !== undefined && direct !== null) return [{...value, __playerValue: direct}];
+      return Object.values(value).flatMap(explodeRemoteScorerValue);
+    }
+
+    const source = String(value).trim();
+    if (!source || source.toLowerCase() === "null") return [];
+
+    if (/^[\[{]/.test(source)) {
+      try {
+        const parsed = JSON.parse(source);
+        if (parsed !== source) return explodeRemoteScorerValue(parsed);
+      } catch (_) { /* PostgreSQL arrays are handled below. */ }
+    }
+
+    const quoted = [...source.matchAll(/"((?:\\.|[^"])*)"/g)]
+      .map(match => match[1].replace(/\\"/g, '"').trim())
+      .filter(Boolean);
+    if (quoted.length) return quoted;
+
+    const unwrapped = source.replace(/^\s*[{}\[\]]\s*|\s*[{}\[\]]\s*$/g, "").trim();
+    if (!unwrapped) return [];
+    if (/[;|]/.test(unwrapped)) return unwrapped.split(/\s*[;|]\s*/).filter(Boolean);
+    if (source.startsWith("{") && unwrapped.includes(",")) return unwrapped.split(/\s*,\s*/).filter(Boolean);
+    return [unwrapped];
+  }
+
+  function parseRemoteScorerToken(item, teamCode, matchId, index) {
+    const rawValue = typeof item === "object" && item !== null
+      ? (item.__playerValue ?? item.player ?? item.name ?? item.scorer ?? item.player_name)
+      : item;
+    const source = String(rawValue ?? "").trim();
+    if (!source) return [];
+
+    const minutes = [...source.matchAll(/(\d{1,3}(?:\+\d{1,2})?)\s*['’]?/g)].map(match => match[1]);
+    const player = canonicalPlayerName(source
+      .replace(/\(?\d{1,3}(?:\+\d{1,2})?\s*['’]?\)?/g, "")
+      .replace(/[:\-–]+$/g, "")
+      .replace(/\s*\+\s*$/g, "")
+      .trim());
+
+    if (!isCompletePlayerName(player)) return [];
+    const eventType = typeof item === "object" && item !== null ? (item.type || "goal") : "goal";
+    const objectMinute = typeof item === "object" && item !== null
+      ? String(item.minute ?? item.time ?? item.elapsed ?? "").trim()
+      : "";
+    const eventMinutes = minutes.length ? minutes : [objectMinute];
+    return eventMinutes.map((minute, minuteIndex) => ({
+      id: `remote-${matchId}-${teamCode}-${index}-${minuteIndex}`,
+      team: teamCode,
+      player,
+      minute: String(minute || "").trim(),
+      type: eventType
+    }));
+  }
+
   function parseRemoteScorers(value, teamCode, matchId) {
-    if (!value || String(value).toLowerCase() === "null") return [];
-    const toEvent = (item, index) => {
-      if (typeof item === "string") {
-        const minuteMatch = item.match(/(\d{1,3}(?:\+\d{1,2})?)\s*['’]?/);
-        const minute = minuteMatch?.[1] || "";
-        const player = item.replace(/\(?\d{1,3}(?:\+\d{1,2})?\s*['’]?\)?/g, "").replace(/[:\-–]+$/g, "").trim();
-        return player ? {id:`remote-${matchId}-${teamCode}-${index}`, team:teamCode, player, minute, type:"goal"} : null;
-      }
-      const player = item?.player || item?.name || item?.scorer || item?.player_name;
-      if (!player) return null;
-      return {id:`remote-${matchId}-${teamCode}-${index}`, team:teamCode, player:String(player), minute:String(item.minute ?? item.time ?? item.elapsed ?? ""), type:item.type || "goal"};
-    };
-    if (Array.isArray(value)) return value.map(toEvent).filter(Boolean);
-    return String(value).split(/\s*[;,|]\s*/).map(toEvent).filter(Boolean);
+    return explodeRemoteScorerValue(value)
+      .flatMap((item, index) => parseRemoteScorerToken(item, teamCode, matchId, index));
+  }
+
+  function remoteGoalEventsAreComplete(events, homeCode, awayCode, homeScore, awayScore) {
+    if (homeScore === null || awayScore === null) return false;
+    const homeCount = events.filter(event => event.team === homeCode).length;
+    const awayCount = events.filter(event => event.team === awayCode).length;
+    return homeCount === homeScore && awayCount === awayScore;
   }
 
   async function fetchCommunityDataDirect() {
@@ -693,7 +874,8 @@
         ...parseRemoteScorers(item.home_scorers ?? item.home_scorer, homeCode, number),
         ...parseRemoteScorers(item.away_scorers ?? item.away_scorer, awayCode, number)
       ];
-      return {number, homeCode, awayCode, homeScore, awayScore, homePenalty:normalizeRemoteScore(item.home_penalty_score ?? item.home_penalties), awayPenalty:normalizeRemoteScore(item.away_penalty_score ?? item.away_penalties), finished, started, goalEvents};
+      const goalEventsComplete = remoteGoalEventsAreComplete(goalEvents, homeCode, awayCode, homeScore, awayScore);
+      return {number, homeCode, awayCode, homeScore, awayScore, homePenalty:normalizeRemoteScore(item.home_penalty_score ?? item.home_penalties), awayPenalty:normalizeRemoteScore(item.away_penalty_score ?? item.away_penalties), finished, started, goalEvents, goalEventsComplete};
     }).filter(item => item.number >= 1 && item.number <= 104);
     return {ok:true, provider:"WorldCup26 Community API", updatedAt:new Date().toISOString(), matches};
   }
@@ -701,19 +883,36 @@
   function updateScorersFromGoalEvents() {
     const counts = new Map();
     Object.values(state.goalEvents).flat().forEach(event => {
-      const key = `${normalizeNameKey(event.player)}|${event.team || ""}`;
-      if (!normalizeNameKey(event.player)) return;
-      const entry = counts.get(key) || {name:event.player, team:event.team, goals:0};
+      const player = canonicalPlayerName(event?.player);
+      const teamCode = String(event?.team || "").toUpperCase();
+      if (!isCompletePlayerName(player) || !team(teamCode)) return;
+      const key = scorerKey(player, teamCode);
+      const entry = counts.get(key) || {name: player, team: teamCode, goals: 0};
       entry.goals += 1;
       counts.set(key, entry);
     });
-    if (!counts.size) return;
-    const existing = new Map(state.scorers.map(item => [`${normalizeNameKey(item.name)}|${item.team || ""}`, item]));
+
+    applyManualMatchEventOverrides();
+
+    const preserved = normalizeScorers(state.scorers.filter(item => !String(item.id || "").startsWith(REMOTE_SCORER_PREFIX)));
+    const existing = new Map(preserved.map(item => [scorerKey(item.name, item.team), item]));
+
     counts.forEach((entry, key) => {
       const current = existing.get(key);
-      if (current) current.goals = entry.goals;
-      else state.scorers.push({id:`remote-scorer-${Date.now()}-${Math.random().toString(36).slice(2,7)}`, ...entry, image:null});
+      if (current) {
+        current.goals = Math.max(safeNumber(current.goals) ?? 0, entry.goals);
+        return;
+      }
+      const scorer = {
+        id: `${REMOTE_SCORER_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        ...entry,
+        image: null
+      };
+      preserved.push(scorer);
+      existing.set(key, scorer);
     });
+
+    state.scorers = normalizeScorers(preserved);
   }
 
   function findRemoteMatchTarget(remote) {
@@ -775,14 +974,16 @@
       }
     }
 
-    if (Array.isArray(remote.goalEvents) && remote.goalEvents.length) {
-      state.goalEvents[local.id] = remote.goalEvents.map((event, index) => ({
-        id: event.id || `remote-${local.id}-${index}`,
-        team: event.team || null,
-        player: String(event.player || "Jogador"),
-        minute: String(event.minute || ""),
-        type: event.type || "goal"
-      }));
+    if (remote.goalEventsComplete === true && Array.isArray(remote.goalEvents)) {
+      state.goalEvents[local.id] = normalizeGoalEvents({
+        [local.id]: remote.goalEvents.map((event, index) => ({
+          id: event.id || `remote-${local.id}-${index}`,
+          team: event.team || null,
+          player: event.player || "",
+          minute: String(event.minute || ""),
+          type: event.type || "goal"
+        }))
+      })[local.id] || [];
     }
 
     return { matched: 1, changed };
@@ -1031,7 +1232,7 @@
   function renderScorerCarousel() {
     const container = document.getElementById("scorerCarousel");
     if (!container) return;
-    const topTen = sortedScorers().slice(0, 10);
+    const topTen = carouselScorers();
     if (!topTen.length) {
       container.innerHTML = `<div class="empty-state">Nenhum artilheiro cadastrado para o carrossel.</div>`;
       return;
@@ -1351,7 +1552,7 @@
   function exportBackup() {
     const payload = {
       app: "Copa 2026 — Painel Premium",
-      version: 6.1,
+      version: 6.2,
       exportedAt: new Date().toISOString(),
       groupMatches: state.groupMatches,
       knockoutMatches: state.knockoutMatches,
@@ -1462,6 +1663,7 @@
       state.knockoutMatches = clone(baseData.knockoutMatches);
       state.scorers = normalizeScorers(baseData.topScorers || []);
       state.goalEvents = normalizeGoalEvents(baseData.goalEvents || {});
+      applyManualMatchEventOverrides();
       localStorage.removeItem(STORAGE_KEY);
       propagateBracket();
       saveState();

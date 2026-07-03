@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Copa 2026" />
   <meta name="description" content="Placar editável, artilharia, classificação e chaveamento premium da Copa do Mundo 2026." />
-  <title>Copa 2026 — Painel Premium</title>
+  <title>Copa 2026 — Painel Premium v6.5</title>
   <link rel="icon" href="assets/icon-192.png" type="image/png" />
   <link rel="apple-touch-icon" href="assets/icon-192.png" />
   <link rel="manifest" href="manifest.json" />
@@ -112,7 +112,6 @@
               <li>Artilharia com top 10 jogadores em destaque</li>
             </ul>
             <button class="button jump" data-go="jogos">Editar todos os jogos</button>
-            <div id="scorerCarousel" class="scorer-carousel" aria-label="Carrossel dos artilheiros da Copa"></div>
           </div>
           <div class="spotlight-card__media">
             <img src="assets/we-are-26.png" alt="We Are 26" />
@@ -120,6 +119,10 @@
               <img src="assets/logo-oficial.png" alt="Logo da Copa" />
               <img src="assets/bola-oficial.png" alt="Bola oficial" />
             </div>
+          </div>
+          <div class="scorer-showcase-grid">
+            <div id="scorerCarousel" class="scorer-carousel" aria-label="Carrossel principal dos artilheiros da Copa"></div>
+            <div id="contenderCarousel" class="scorer-carousel scorer-carousel--mini" aria-label="Carrossel dos demais artilheiros ativos"></div>
           </div>
         </article>
 

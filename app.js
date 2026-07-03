@@ -8,6 +8,23 @@
     : JSON.parse(JSON.stringify(value));
 
   const REMOTE_SCORER_PREFIX = "remote-scorer-";
+  const DATA_VERSION = 6.5;
+  const MANUAL_MATCH_EVENT_OVERRIDES = Object.freeze({
+    m83: [
+      {team:"CRO", player:"Ivan Perišić", minute:"53", type:"goal"},
+      {team:"POR", player:"Cristiano Ronaldo", minute:"68", type:"penalty"},
+      {team:"POR", player:"Gonçalo Ramos", minute:"90+4", type:"goal"}
+    ],
+    m84: [
+      {team:"ESP", player:"Mikel Oyarzabal", minute:"36", type:"goal"},
+      {team:"ESP", player:"Pedro Porro", minute:"66", type:"goal"},
+      {team:"ESP", player:"Mikel Oyarzabal", minute:"89", type:"goal"}
+    ],
+    m85: [
+      {team:"SUI", player:"Breel Embolo", minute:"10", type:"goal"},
+      {team:"SUI", player:"Dan Ndoye", minute:"46", type:"goal"}
+    ]
+  });
   const SCORER_NAME_ALIASES = Object.freeze({
     "k mbappe": "Kylian Mbappé",
     "kylian mbappe": "Kylian Mbappé",
@@ -35,7 +52,33 @@
     "gvnchalv ramvs": "Gonçalo Ramos",
     "goncalo ramos": "Gonçalo Ramos",
     "c ronaldo": "Cristiano Ronaldo",
-    "cristiano ronaldo": "Cristiano Ronaldo"
+    "cristiano ronaldo": "Cristiano Ronaldo",
+    "f balogun": "Folarin Balogun",
+    "folarin balogun": "Folarin Balogun",
+    "i saibari": "Ismael Saibari",
+    "ismael saibari": "Ismael Saibari",
+    "j david": "Jonathan David",
+    "jonathan david": "Jonathan David",
+    "m cunha": "Matheus Cunha",
+    "matheus cunha": "Matheus Cunha",
+    "b brobbey": "Brian Brobbey",
+    "brian brobbey": "Brian Brobbey",
+    "c gakpo": "Cody Gakpo",
+    "cody gakpo": "Cody Gakpo",
+    "k havertz": "Kai Havertz",
+    "kai havertz": "Kai Havertz",
+    "e just": "Elijah Just",
+    "elijah just": "Elijah Just",
+    "y wissa": "Yoane Wissa",
+    "yoane wissa": "Yoane Wissa",
+    "i perisic": "Ivan Perišić",
+    "ivan perisic": "Ivan Perišić",
+    "p porro": "Pedro Porro",
+    "pedro porro": "Pedro Porro",
+    "b embolo": "Breel Embolo",
+    "breel embolo": "Breel Embolo",
+    "d ndoye": "Dan Ndoye",
+    "dan ndoye": "Dan Ndoye"
   });
 
   function canonicalPlayerName(value) {
@@ -129,12 +172,15 @@
   let bracketFitScale = 1;
   let scorerCarouselIndex = 0;
   let scorerCarouselTimer = null;
+  let contenderCarouselIndex = 0;
+  let contenderCarouselTimer = null;
   let currentGoalMatchId = null;
   let deferredInstallPrompt = null;
   let syncingBracketScroll = false;
   const BRACKET_ZOOM_MIN = 0.4;
   const BRACKET_ZOOM_MAX = 2.5;
   const SCORER_CAROUSEL_INTERVAL = 5200;
+  const CONTENDER_CAROUSEL_INTERVAL = 4300;
   const LIVE_UPDATE_ENDPOINT = "/.netlify/functions/update-copa";
   const COMMUNITY_GAMES_URL = "https://worldcup26.ir/get/games";
   const COMMUNITY_TEAMS_URL = "https://worldcup26.ir/get/teams";
@@ -180,7 +226,12 @@
     "mikel oyarzabal": "assets/scorer-mikel-oyarzabal.jpg",
     "kylian mbappe": "assets/scorer-kylian-mbappe.jpg",
     "lionel messi": "assets/scorer-lionel-messi.jpg",
-    "vinicius junior": "assets/scorer-vinicius-junior.jpg"
+    "vinicius junior": "assets/scorer-vinicius-junior.jpg",
+    "cristiano ronaldo": "assets/scorer-cristiano-ronaldo.jpg",
+    "folarin balogun": "assets/scorer-folarin-balogun.jpg",
+    "ismael saibari": "assets/scorer-ismael-saibari.jpg",
+    "jonathan david": "assets/scorer-jonathan-david.jpg",
+    "matheus cunha": "assets/scorer-matheus-cunha.jpg"
   };
 
   function team(code) {
@@ -216,14 +267,27 @@
     );
   }
 
-  function carouselScorers() {
+  function mainCarouselScorers() {
     const activeTeams = getActiveTeamCodes();
-    const withImages = sortedScorers().map((item, index) => ({ item, index })).filter(({ item }) => scorerImageFor(item));
-    return withImages.sort((a, b) =>
-      Number(activeTeams.has(b.item.team)) - Number(activeTeams.has(a.item.team))
-      || (b.item.goals ?? 0) - (a.item.goals ?? 0)
-      || a.index - b.index
-    ).map(({ item }) => item).slice(0, 10);
+    return sortedScorers()
+      .filter(item => scorerImageFor(item))
+      .sort((a, b) =>
+        (b.goals ?? 0) - (a.goals ?? 0)
+        || Number(activeTeams.has(b.team)) - Number(activeTeams.has(a.team))
+        || String(a.name).localeCompare(String(b.name), "pt-BR")
+      )
+      .slice(0, 10);
+  }
+
+  function contenderCarouselScorers() {
+    const activeTeams = getActiveTeamCodes();
+    const mainKeys = new Set(mainCarouselScorers().map(item => scorerKey(item.name, item.team)));
+    return sortedScorers()
+      .filter(item => (item.goals ?? 0) === 3)
+      .filter(item => activeTeams.has(item.team))
+      .filter(item => scorerImageFor(item))
+      .filter(item => !mainKeys.has(scorerKey(item.name, item.team)))
+      .sort((a, b) => String(a.name).localeCompare(String(b.name), "pt-BR"));
   }
 
   function safeNumber(value) {
@@ -383,22 +447,25 @@
       }
 
       restoreMatchesFromSaved(saved);
-      const isLegacyScorerData = Number(saved.version || 0) < 6.2;
-      if (Array.isArray(saved.scorers)) {
-        const scorerSource = isLegacyScorerData
-          ? saved.scorers.filter(item => !String(item?.id || "").startsWith(REMOTE_SCORER_PREFIX))
-          : saved.scorers;
-        state.scorers = normalizeScorers(scorerSource);
-      }
-      if (saved.goalEvents && typeof saved.goalEvents === "object") {
-        state.goalEvents = isLegacyScorerData
-          ? normalizeGoalEvents(baseData.goalEvents || {})
-          : normalizeGoalEvents(saved.goalEvents);
-      }
+      const isLegacyScorerData = Number(saved.version || 0) < DATA_VERSION;
       if (isLegacyScorerData) {
-        updateScorersFromGoalEvents();
+        state.knockoutMatches = state.knockoutMatches.map(match => {
+          const seeded = baseData.knockoutMatches.find(item => item.id === match.id);
+          if (!seeded || seeded.hg === null || seeded.ag === null) return match;
+          return { ...match, hg: seeded.hg, ag: seeded.ag, hp: seeded.hp, ap: seeded.ap, ...(seeded.note ? {note:seeded.note} : {}) };
+        });
+        state.scorers = normalizeScorers(baseData.topScorers || []);
+        state.goalEvents = normalizeGoalEvents({
+          ...(saved.goalEvents && typeof saved.goalEvents === "object" ? saved.goalEvents : {}),
+          ...(baseData.goalEvents || {})
+        });
+        applyManualMatchEventOverrides();
         saveState();
-        console.warn("A artilharia e os eventos antigos foram higienizados automaticamente para remover agregados inválidos.");
+        console.warn("A artilharia foi atualizada para a lista confiável da versão 6.5.");
+      } else {
+        if (Array.isArray(saved.scorers)) state.scorers = normalizeScorers(saved.scorers);
+        if (saved.goalEvents && typeof saved.goalEvents === "object") state.goalEvents = normalizeGoalEvents(saved.goalEvents);
+        applyManualMatchEventOverrides();
       }
     } catch (error) {
       console.warn("Não foi possível carregar o backup local.", error);
@@ -407,7 +474,7 @@
 
   function saveState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      version: 6.2,
+      version: DATA_VERSION,
       savedAt: new Date().toISOString(),
       groupMatches: state.groupMatches,
       knockoutMatches: state.knockoutMatches,
@@ -519,10 +586,7 @@
 
   function applyManualMatchEventOverrides() {
     Object.entries(MANUAL_MATCH_EVENT_OVERRIDES).forEach(([matchId, events]) => {
-      const normalized = normalizeGoalEvents({ [matchId]: events })[matchId] || [];
-      const existing = Array.isArray(state.goalEvents[matchId]) ? state.goalEvents[matchId] : [];
-      const preserved = existing.filter(event => !normalized.some(item => scorerKey(item.player, item.team) === scorerKey(event.player, event.team) && String(item.minute || "") === String(event.minute || "")));
-      state.goalEvents[matchId] = normalizeGoalEvents({ [matchId]: [...preserved, ...normalized] })[matchId] || [];
+      state.goalEvents[matchId] = normalizeGoalEvents({ [matchId]: events })[matchId] || [];
     });
   }
 
@@ -880,54 +944,38 @@
     return {ok:true, provider:"WorldCup26 Community API", updatedAt:new Date().toISOString(), matches};
   }
 
-  function updateScorersFromGoalEvents() {
-    const counts = new Map();
-    Object.values(state.goalEvents).flat().forEach(event => {
-      const player = canonicalPlayerName(event?.player);
-      const teamCode = String(event?.team || "").toUpperCase();
-      if (!isCompletePlayerName(player) || !team(teamCode)) return;
-      const key = scorerKey(player, teamCode);
-      const entry = counts.get(key) || {name: player, team: teamCode, goals: 0};
-      entry.goals += 1;
-      counts.set(key, entry);
-    });
-
-    applyManualMatchEventOverrides();
-
-    const preserved = normalizeScorers(state.scorers.filter(item => !String(item.id || "").startsWith(REMOTE_SCORER_PREFIX)));
-    const existing = new Map(preserved.map(item => [scorerKey(item.name, item.team), item]));
-
-    counts.forEach((entry, key) => {
-      const current = existing.get(key);
-      if (current) {
-        current.goals = Math.max(safeNumber(current.goals) ?? 0, entry.goals);
-        return;
-      }
-      const scorer = {
-        id: `${REMOTE_SCORER_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-        ...entry,
-        image: null
-      };
-      preserved.push(scorer);
-      existing.set(key, scorer);
-    });
-
-    state.scorers = normalizeScorers(preserved);
+  function applyOfficialScorerSnapshot(items) {
+    if (!Array.isArray(items) || !items.length) return 0;
+    const clean = items
+      .map(item => ({
+        id: item.id || `official-${normalizeNameKey(item.name)}-${item.team}`,
+        name: canonicalPlayerName(item.name),
+        team: String(item.team || "").toUpperCase(),
+        goals: safeNumber(item.goals) ?? 0,
+        image: item.image || scorerImageFor(item)
+      }))
+      .filter(item => isCompletePlayerName(item.name) && team(item.team));
+    if (!clean.length) return 0;
+    state.scorers = normalizeScorers(clean);
+    return clean.length;
   }
 
   function findRemoteMatchTarget(remote) {
     const number = Number(remote.number);
-    const collection = number <= 72 ? state.groupMatches : state.knockoutMatches;
     const homeCode = String(remote.homeCode || "").toUpperCase();
     const awayCode = String(remote.awayCode || "").toUpperCase();
     const hasValidPair = Boolean(homeCode && awayCode && team(homeCode) && team(awayCode));
+    const allMatches = [...state.groupMatches, ...state.knockoutMatches];
 
     if (hasValidPair) {
-      const exact = collection.find(match => match.home === homeCode && match.away === awayCode);
+      const exact = allMatches.find(match => match.home === homeCode && match.away === awayCode);
       if (exact) return { local: exact, reversed: false };
-      const reversed = collection.find(match => match.home === awayCode && match.away === homeCode);
+      const reversed = allMatches.find(match => match.home === awayCode && match.away === homeCode);
       if (reversed) return { local: reversed, reversed: true };
     }
+
+    if (!Number.isFinite(number)) return null;
+    const collection = number <= 72 ? state.groupMatches : state.knockoutMatches;
 
     // Nunca associa fase de grupos apenas pelo número: fontes diferentes podem
     // ordenar as 72 partidas de maneiras distintas.
@@ -991,58 +1039,47 @@
 
   function applyRemoteUpdate(payload) {
     const matches = Array.isArray(payload?.matches) ? payload.matches : [];
-    if (!matches.length) throw new Error("A fonte não retornou partidas utilizáveis.");
-
-    const ranges = [[1,72],[73,88],[89,96],[97,100],[101,102],[103,104]];
+    const scorerCount = applyOfficialScorerSnapshot(payload?.scorers);
     let changed = 0;
     let matched = 0;
 
-    ranges.forEach(([min, max]) => {
-      matches
-        .filter(remote => Number(remote.number) >= min && Number(remote.number) <= max)
-        .forEach(remote => {
-          const result = applyRemoteMatch(remote);
-          changed += result.changed;
-          matched += result.matched;
-        });
-      propagateBracket();
-    });
+    [...matches]
+      .sort((a, b) => String(a.date || "").localeCompare(String(b.date || "")) || (Number(a.number) || 999) - (Number(b.number) || 999))
+      .forEach(remote => {
+        const result = applyRemoteMatch(remote);
+        changed += result.changed;
+        matched += result.matched;
+        propagateBracket();
+      });
 
-    if (!matched) {
-      throw new Error("A fonte respondeu, mas os confrontos não coincidiram com a tabela do aplicativo.");
-    }
-
-    updateScorersFromGoalEvents();
+    applyManualMatchEventOverrides();
+    if (!matched && !scorerCount) throw new Error("A fonte não retornou informações utilizáveis.");
     saveState();
     renderAll();
-    return { changed, matched, skipped: Math.max(0, matches.length - matched) };
+    return { changed, matched, scorers: scorerCount, skipped: Math.max(0, matches.length - matched) };
   }
 
   async function updateLiveData() {
     const button = document.getElementById("updateDataBtn");
     const status = document.getElementById("updateStatus");
     if (button) button.disabled = true;
-    if (status) status.innerHTML = `<span class="update-status__spinner"></span> Buscando resultados, gols e artilharia...`;
+    if (status) status.innerHTML = `<span class="update-status__spinner"></span> Conferindo placares, gols e artilharia...`;
     try {
-      let payload;
-      if (location.protocol !== "file:") {
-        try {
-          const response = await fetch(LIVE_UPDATE_ENDPOINT, {cache:"no-store", headers:{"Accept":"application/json"}});
-          if (!response.ok) throw new Error(`Servidor de atualização: ${response.status}`);
-          payload = await response.json();
-        } catch (serverError) {
-          console.warn("Função Netlify indisponível; tentando fonte direta.", serverError);
-          payload = await fetchCommunityDataDirect();
-        }
-      } else {
-        payload = await fetchCommunityDataDirect();
-      }
+      if (location.protocol === "file:") throw new Error("Abra a versão publicada no Netlify para atualizar automaticamente.");
+      const response = await fetch(LIVE_UPDATE_ENDPOINT, {cache:"no-store", headers:{"Accept":"application/json"}});
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload?.ok === false) throw new Error(payload?.error || `Servidor de atualização: ${response.status}`);
       const result = applyRemoteUpdate(payload);
       const time = new Intl.DateTimeFormat("pt-BR", {hour:"2-digit", minute:"2-digit"}).format(new Date());
-      if (status) status.innerHTML = `<strong>Atualizado às ${time}</strong> • ${result.changed} placar(es) alterado(s) • ${result.matched} partida(s) conferida(s) • fonte: ${escapeHtml(payload.provider || "API configurada")}`;
+      const detail = [
+        `${result.changed} placar(es) alterado(s)`,
+        `${result.matched} partida(s) conferida(s)`,
+        result.scorers ? `${result.scorers} artilheiro(s) validados` : "artilharia preservada"
+      ].join(" • ");
+      if (status) status.innerHTML = `<strong>Atualizado às ${time}</strong> • ${detail} • fonte: ${escapeHtml(payload.provider || "dados verificados")}${payload.degraded ? " • modo de segurança" : ""}`;
     } catch (error) {
       console.error(error);
-      if (status) status.innerHTML = `<strong>Não foi possível atualizar.</strong> ${escapeHtml(error.message)} ${location.protocol === "file:" ? "Publique a pasta no Netlify para usar a função automática com mais estabilidade." : ""}`;
+      if (status) status.innerHTML = `<strong>Não foi possível consultar a fonte agora.</strong> Os dados confiáveis já salvos foram preservados. <span>${escapeHtml(error.message)}</span>`;
     } finally {
       if (button) button.disabled = false;
     }
@@ -1232,7 +1269,7 @@
   function renderScorerCarousel() {
     const container = document.getElementById("scorerCarousel");
     if (!container) return;
-    const topTen = carouselScorers();
+    const topTen = mainCarouselScorers();
     if (!topTen.length) {
       container.innerHTML = `<div class="empty-state">Nenhum artilheiro cadastrado para o carrossel.</div>`;
       return;
@@ -1240,7 +1277,7 @@
     scorerCarouselIndex = ((scorerCarouselIndex % topTen.length) + topTen.length) % topTen.length;
     container.innerHTML = `
       <div class="scorer-carousel__heading">
-        <div><p class="eyebrow">GALERIA DOS ARTILHEIROS</p><h4>Os destaques da Copa</h4></div>
+        <div><p class="eyebrow">GALERIA PRINCIPAL</p><h4>Top 10 em destaque</h4></div>
         <span>${topTen.length} jogadores</span>
       </div>
       <div class="scorer-carousel__viewport">
@@ -1252,7 +1289,7 @@
             : `<div class="scorer-carousel__placeholder"><span>${selection?.flag || "⚽"}</span><strong>${escapeHtml(item.name)}</strong></div>`;
           return `<article class="scorer-carousel__slide ${index === scorerCarouselIndex ? "is-active" : ""}" data-carousel-slide="${index}" aria-hidden="${index === scorerCarouselIndex ? "false" : "true"}">
             <div class="scorer-carousel__frame">
-              <div class="scorer-carousel__rank">#${index + 1}</div>
+              <div class="scorer-carousel__rank">#${sortedScorers().findIndex(rankItem => scorerKey(rankItem.name, rankItem.team) === scorerKey(item.name, item.team)) + 1}</div>
               ${imageMarkup}
               <div class="scorer-carousel__overlay">
                 <div class="scorer-carousel__team"><span>${selection?.flag || "⚽"}</span>${escapeHtml(selection?.name || item.team || "Seleção")}</div>
@@ -1295,6 +1332,73 @@
     if (dotButton) {
       showScorerCarouselSlide(Number(dotButton.dataset.carouselDot));
       startScorerCarousel();
+    }
+  }
+
+  function renderContenderCarousel() {
+    const container = document.getElementById("contenderCarousel");
+    if (!container) return;
+    const players = contenderCarouselScorers();
+    if (!players.length) {
+      container.innerHTML = `<div class="scorer-carousel__heading"><div><p class="eyebrow">NA BRIGA</p><h4>Outros artilheiros ativos</h4></div></div><div class="empty-state">Nenhum outro jogador ativo com três gols neste momento.</div>`;
+      return;
+    }
+    contenderCarouselIndex = ((contenderCarouselIndex % players.length) + players.length) % players.length;
+    container.innerHTML = `
+      <div class="scorer-carousel__heading">
+        <div><p class="eyebrow">NA BRIGA PELO TOP 10</p><h4>Outros artilheiros ativos</h4></div>
+        <span>${players.length} jogadores</span>
+      </div>
+      <div class="scorer-carousel__viewport">
+        ${players.map((item, index) => {
+          const selection = team(item.team);
+          const image = scorerImageFor(item);
+          const ranking = sortedScorers().findIndex(rankItem => scorerKey(rankItem.name, rankItem.team) === scorerKey(item.name, item.team)) + 1;
+          return `<article class="scorer-carousel__slide ${index === contenderCarouselIndex ? "is-active" : ""}" data-contender-slide="${index}" aria-hidden="${index === contenderCarouselIndex ? "false" : "true"}">
+            <div class="scorer-carousel__frame">
+              <div class="scorer-carousel__rank">#${ranking}</div>
+              <img src="${image}" alt="${escapeHtml(item.name)}" loading="${index < 2 ? "eager" : "lazy"}" />
+              <div class="scorer-carousel__overlay">
+                <div class="scorer-carousel__team"><span>${selection?.flag || "⚽"}</span>${escapeHtml(selection?.name || item.team)}</div>
+                <h5>${escapeHtml(item.name)}</h5>
+                <div class="scorer-carousel__goals"><strong>${item.goals ?? 0}</strong><span>gols</span></div>
+              </div>
+            </div>
+          </article>`;
+        }).join("")}
+        <button class="scorer-carousel__nav scorer-carousel__nav--prev" type="button" data-contender-dir="-1" aria-label="Jogador anterior">‹</button>
+        <button class="scorer-carousel__nav scorer-carousel__nav--next" type="button" data-contender-dir="1" aria-label="Próximo jogador">›</button>
+      </div>
+      <div class="scorer-carousel__dots">${players.map((_, index) => `<button type="button" class="${index === contenderCarouselIndex ? "is-active" : ""}" data-contender-dot="${index}" aria-label="Exibir jogador ${index + 1}"></button>`).join("")}</div>`;
+  }
+
+  function showContenderCarouselSlide(index) {
+    const slides = [...document.querySelectorAll("[data-contender-slide]")];
+    if (!slides.length) return;
+    contenderCarouselIndex = ((Number(index) % slides.length) + slides.length) % slides.length;
+    slides.forEach((slide, itemIndex) => {
+      const active = itemIndex === contenderCarouselIndex;
+      slide.classList.toggle("is-active", active);
+      slide.setAttribute("aria-hidden", active ? "false" : "true");
+    });
+    document.querySelectorAll("[data-contender-dot]").forEach((dot, itemIndex) => dot.classList.toggle("is-active", itemIndex === contenderCarouselIndex));
+  }
+
+  function startContenderCarousel() {
+    window.clearInterval(contenderCarouselTimer);
+    contenderCarouselTimer = window.setInterval(() => showContenderCarouselSlide(contenderCarouselIndex + 1), CONTENDER_CAROUSEL_INTERVAL);
+  }
+
+  function handleContenderCarouselClick(event) {
+    const directionButton = event.target.closest("[data-contender-dir]");
+    const dotButton = event.target.closest("[data-contender-dot]");
+    if (directionButton) {
+      showContenderCarouselSlide(contenderCarouselIndex + Number(directionButton.dataset.contenderDir));
+      startContenderCarousel();
+    }
+    if (dotButton) {
+      showContenderCarouselSlide(Number(dotButton.dataset.contenderDot));
+      startContenderCarousel();
     }
   }
 
@@ -1383,6 +1487,7 @@
     renderChampionSummary(championCode, leader);
     renderTopScorers();
     renderScorerCarousel();
+    renderContenderCarousel();
     renderScorerEditor();
   }
 
@@ -1552,7 +1657,7 @@
   function exportBackup() {
     const payload = {
       app: "Copa 2026 — Painel Premium",
-      version: 6.2,
+      version: DATA_VERSION,
       exportedAt: new Date().toISOString(),
       groupMatches: state.groupMatches,
       knockoutMatches: state.knockoutMatches,
@@ -1614,6 +1719,7 @@
     document.addEventListener("click", handleGoalEventRemove);
     document.addEventListener("click", handleTeamTooltipClick);
     document.addEventListener("click", handleScorerCarouselClick);
+    document.addEventListener("click", handleContenderCarouselClick);
     document.getElementById("addGoalEventBtn").addEventListener("click", addGoalEvent);
     document.getElementById("zoomOutBtn").addEventListener("click", () => setBracketZoom(bracketZoom - 0.05));
     document.getElementById("zoomInBtn").addEventListener("click", () => setBracketZoom(bracketZoom + 0.05));
@@ -1644,6 +1750,9 @@
     const carousel = document.getElementById("scorerCarousel");
     carousel?.addEventListener("mouseenter", () => window.clearInterval(scorerCarouselTimer));
     carousel?.addEventListener("mouseleave", startScorerCarousel);
+    const contenderCarousel = document.getElementById("contenderCarousel");
+    contenderCarousel?.addEventListener("mouseenter", () => window.clearInterval(contenderCarouselTimer));
+    contenderCarousel?.addEventListener("mouseleave", startContenderCarousel);
     window.addEventListener("resize", () => {
       if (document.getElementById("chave")?.classList.contains("is-active")) applyBracketZoom(true);
     });
@@ -1681,6 +1790,7 @@
     setupPwaInstall();
     renderAll();
     startScorerCarousel();
+    startContenderCarousel();
     loadWasmEngine();
     window.addEventListener("resize", () => requestAnimationFrame(applyBracketZoom));
 

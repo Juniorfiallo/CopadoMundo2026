@@ -1,9 +1,9 @@
 window.COPA_DATA = {
   meta: {
     title: "Copa do Mundo 2026 — Placar & Chaveamento",
-    seededThrough: "01/07/2026",
-    note: "Resultados iniciais preenchidos até 01/07/2026. Jogos posteriores ficam prontos para edição manual. O painel premium inclui chave lateral, slogan We Are 26, artilharia editável e calendário dinâmico.",
-    sourceLabel: "FIFA / calendário e resultados públicos conferidos em 02/07/2026"
+    seededThrough: "03/07/2026",
+    note: "Resultados e autores dos gols conferidos até o jogo Suíça 2 x 0 Argélia, em 03/07/2026. O painel mantém chave lateral, slogan We Are 26, artilharia confiável e calendário dinâmico.",
+    sourceLabel: "FIFA e ESPN / resultados e artilharia conferidos em 03/07/2026"
   },
   teams: {
     MEX:{name:"México",flag:"🇲🇽"}, RSA:{name:"África do Sul",flag:"🇿🇦"}, KOR:{name:"Coreia do Sul",flag:"🇰🇷"}, CZE:{name:"Tchéquia",flag:"🇨🇿"},
@@ -21,16 +21,27 @@ window.COPA_DATA = {
   },
 
   topScorers: [
-    {name:"Kylian Mbappé", team:"FRA", goals:6},
-    {name:"Lionel Messi", team:"ARG", goals:6},
-    {name:"Erling Haaland", team:"NOR", goals:5},
-    {name:"Harry Kane", team:"ENG", goals:5},
-    {name:"Ousmane Dembélé", team:"FRA", goals:4},
-    {name:"Vinícius Júnior", team:"BRA", goals:4},
-    {name:"Ismaïla Sarr", team:"SEN", goals:4},
-    {name:"Deniz Undav", team:"GER", goals:3},
-    {name:"Johan Manzambi", team:"SUI", goals:3},
-    {name:"Julián Quiñones", team:"MEX", goals:3}
+    {name:"Kylian Mbappé", team:"FRA", goals:6, image:"assets/scorer-kylian-mbappe.jpg"},
+    {name:"Lionel Messi", team:"ARG", goals:6, image:"assets/scorer-lionel-messi.jpg"},
+    {name:"Erling Haaland", team:"NOR", goals:5, image:"assets/scorer-erling-haaland.jpg"},
+    {name:"Harry Kane", team:"ENG", goals:5, image:"assets/scorer-harry-kane.jpg"},
+    {name:"Ismaïla Sarr", team:"SEN", goals:4, image:"assets/scorer-ismaila-sarr.jpg"},
+    {name:"Mikel Oyarzabal", team:"ESP", goals:4, image:"assets/scorer-mikel-oyarzabal.jpg"},
+    {name:"Ousmane Dembélé", team:"FRA", goals:4, image:"assets/scorer-ousmane-dembele.jpg"},
+    {name:"Vinícius Júnior", team:"BRA", goals:4, image:"assets/scorer-vinicius-junior.jpg"},
+    {name:"Brian Brobbey", team:"NED", goals:3},
+    {name:"Cody Gakpo", team:"NED", goals:3},
+    {name:"Cristiano Ronaldo", team:"POR", goals:3, image:"assets/scorer-cristiano-ronaldo.jpg"},
+    {name:"Deniz Undav", team:"GER", goals:3, image:"assets/scorer-deniz-undav.jpg"},
+    {name:"Elijah Just", team:"NZL", goals:3},
+    {name:"Folarin Balogun", team:"USA", goals:3, image:"assets/scorer-folarin-balogun.jpg"},
+    {name:"Ismael Saibari", team:"MAR", goals:3, image:"assets/scorer-ismael-saibari.jpg"},
+    {name:"Johan Manzambi", team:"SUI", goals:3, image:"assets/scorer-johan-manzambi.jpg"},
+    {name:"Jonathan David", team:"CAN", goals:3, image:"assets/scorer-jonathan-david.jpg"},
+    {name:"Julián Quiñones", team:"MEX", goals:3, image:"assets/scorer-julian-quinones.jpg"},
+    {name:"Kai Havertz", team:"GER", goals:3},
+    {name:"Matheus Cunha", team:"BRA", goals:3, image:"assets/scorer-matheus-cunha.jpg"},
+    {name:"Yoane Wissa", team:"COD", goals:3}
   ],
   goalEvents: {
     m73: [
@@ -78,6 +89,20 @@ window.COPA_DATA = {
       {team:"BEL", player:"Romelu Lukaku", minute:"86"},
       {team:"BEL", player:"Youri Tielemans", minute:"89"},
       {team:"BEL", player:"Youri Tielemans", minute:"120+5", type:"penalty"}
+    ],
+    m83: [
+      {team:"CRO", player:"Ivan Perišić", minute:"53"},
+      {team:"POR", player:"Cristiano Ronaldo", minute:"68", type:"penalty"},
+      {team:"POR", player:"Gonçalo Ramos", minute:"90+4"}
+    ],
+    m84: [
+      {team:"ESP", player:"Mikel Oyarzabal", minute:"36"},
+      {team:"ESP", player:"Pedro Porro", minute:"66"},
+      {team:"ESP", player:"Mikel Oyarzabal", minute:"89"}
+    ],
+    m85: [
+      {team:"SUI", player:"Breel Embolo", minute:"10"},
+      {team:"SUI", player:"Dan Ndoye", minute:"46"}
     ]
   },
 
@@ -171,9 +196,9 @@ window.COPA_DATA = {
     {id:"m80",stage:"R32",date:"2026-07-01",time:"13:00",home:"ENG",away:"COD",hg:2,ag:1,hp:null,ap:null},
     {id:"m81",stage:"R32",date:"2026-07-01",time:"21:00",home:"USA",away:"BIH",hg:2,ag:0,hp:null,ap:null},
     {id:"m82",stage:"R32",date:"2026-07-01",time:"17:00",home:"BEL",away:"SEN",hg:3,ag:2,hp:null,ap:null,note:"Após prorrogação"},
-    {id:"m83",stage:"R32",date:"2026-07-02",time:"20:00",home:"POR",away:"CRO",hg:null,ag:null,hp:null,ap:null},
-    {id:"m84",stage:"R32",date:"2026-07-02",time:"16:00",home:"ESP",away:"AUT",hg:null,ag:null,hp:null,ap:null},
-    {id:"m85",stage:"R32",date:"2026-07-03",time:"00:00",home:"SUI",away:"ALG",hg:null,ag:null,hp:null,ap:null},
+    {id:"m83",stage:"R32",date:"2026-07-02",time:"20:00",home:"POR",away:"CRO",hg:2,ag:1,hp:null,ap:null},
+    {id:"m84",stage:"R32",date:"2026-07-02",time:"16:00",home:"ESP",away:"AUT",hg:3,ag:0,hp:null,ap:null},
+    {id:"m85",stage:"R32",date:"2026-07-03",time:"00:00",home:"SUI",away:"ALG",hg:2,ag:0,hp:null,ap:null},
     {id:"m86",stage:"R32",date:"2026-07-03",time:"19:00",home:"ARG",away:"CPV",hg:null,ag:null,hp:null,ap:null},
     {id:"m87",stage:"R32",date:"2026-07-03",time:"22:30",home:"COL",away:"GHA",hg:null,ag:null,hp:null,ap:null},
     {id:"m88",stage:"R32",date:"2026-07-03",time:"15:00",home:"AUS",away:"EGY",hg:null,ag:null,hp:null,ap:null},

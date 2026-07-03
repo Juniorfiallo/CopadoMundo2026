@@ -1905,3 +1905,64 @@ footer { grid-template-columns: 1fr 1fr minmax(280px,.8fr); align-items: start; 
 @media (max-width: 760px) {
   .toolbar__actions { justify-content: flex-start; }
 }
+
+/* v6.5 — galeria dupla de artilheiros */
+.scorer-showcase-grid {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(280px, .75fr);
+  gap: 16px;
+  align-items: stretch;
+  margin-top: 8px;
+}
+.scorer-showcase-grid .scorer-carousel { margin-top: 0; }
+.scorer-carousel--mini {
+  padding: 12px;
+  background:
+    radial-gradient(circle at 88% 10%, rgba(244,211,93,.22), transparent 35%),
+    radial-gradient(circle at 15% 85%, rgba(27,125,255,.18), transparent 36%),
+    linear-gradient(145deg, rgba(8,22,32,.98), rgba(4,14,22,.98));
+}
+.scorer-carousel--mini .scorer-carousel__heading h4 { font-size: 1.12rem; }
+.scorer-carousel--mini .scorer-carousel__heading > span { font-size: .68rem; }
+.scorer-carousel--mini .scorer-carousel__viewport { height: clamp(430px, 38vw, 620px); }
+.scorer-carousel--mini .scorer-carousel__overlay { padding: 82px 16px 16px; }
+.scorer-carousel--mini .scorer-carousel__overlay h5 {
+  max-width: calc(100% - 76px);
+  font-size: clamp(1.35rem, 2vw, 2rem);
+}
+.scorer-carousel--mini .scorer-carousel__goals {
+  right: 14px;
+  bottom: 14px;
+  min-width: 70px;
+  min-height: 70px;
+  border-radius: 18px;
+}
+.scorer-carousel--mini .scorer-carousel__goals strong { font-size: 1.65rem; }
+.scorer-carousel--mini .scorer-carousel__rank {
+  top: 18px;
+  left: 18px;
+  min-width: 48px;
+  height: 38px;
+  font-size: .92rem;
+}
+.scorer-carousel--mini .scorer-carousel__nav { width: 38px; height: 48px; }
+.scorer-carousel--mini .scorer-carousel__frame > img { object-position: center top; }
+.goal-tooltip small + small {
+  display: block;
+  margin-top: 5px;
+  color: var(--gold);
+}
+
+@media (max-width: 1180px) {
+  .scorer-showcase-grid { grid-template-columns: minmax(0, 1.35fr) minmax(260px, .8fr); }
+}
+@media (max-width: 900px) {
+  .scorer-showcase-grid { grid-template-columns: 1fr; }
+  .scorer-carousel--mini .scorer-carousel__viewport { height: min(62vh, 560px); }
+}
+@media (max-width: 760px) {
+  .scorer-showcase-grid { gap: 12px; }
+  .scorer-carousel--mini .scorer-carousel__viewport { height: min(68vh, 540px); }
+  .scorer-carousel--mini .scorer-carousel__overlay h5 { font-size: 1.55rem; }
+}

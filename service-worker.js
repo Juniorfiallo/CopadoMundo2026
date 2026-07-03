@@ -1,4 +1,4 @@
-const CACHE_NAME = "copa-2026-premium-v6-3";
+const CACHE_NAME = "copa-2026-premium-v6-5";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -20,6 +20,11 @@ const APP_SHELL = [
   "./assets/scorer-johan-manzambi.jpg",
   "./assets/scorer-julian-quinones.jpg",
   "./assets/scorer-mikel-oyarzabal.jpg",
+  "./assets/scorer-cristiano-ronaldo.jpg",
+  "./assets/scorer-folarin-balogun.jpg",
+  "./assets/scorer-ismael-saibari.jpg",
+  "./assets/scorer-jonathan-david.jpg",
+  "./assets/scorer-matheus-cunha.jpg",
   "./assets/scorer-kylian-mbappe.jpg",
   "./assets/scorer-lionel-messi.jpg",
   "./assets/scorer-vinicius-junior.jpg",

@@ -218,25 +218,75 @@
     }
   }
 
+  function savedStructureIsCompatible(saved) {
+    if (!Array.isArray(saved?.groupMatches) || !Array.isArray(saved?.knockoutMatches)) return true;
+    const groupMap = new Map(saved.groupMatches.map(match => [match.id, match]));
+    const knockoutMapSaved = new Map(saved.knockoutMatches.map(match => [match.id, match]));
+
+    const groupStructureOk = baseData.groupMatches.every(baseMatch => {
+      const stored = groupMap.get(baseMatch.id);
+      return !stored || (
+        stored.group === baseMatch.group
+        && stored.home === baseMatch.home
+        && stored.away === baseMatch.away
+      );
+    });
+
+    const fixedKnockoutStructureOk = baseData.knockoutMatches
+      .filter(match => Number(match.id.slice(1)) <= 88)
+      .every(baseMatch => {
+        const stored = knockoutMapSaved.get(baseMatch.id);
+        return !stored || (stored.home === baseMatch.home && stored.away === baseMatch.away);
+      });
+
+    return groupStructureOk && fixedKnockoutStructureOk;
+  }
+
+  function restoreMatchesFromSaved(saved) {
+    const groupMap = new Map((saved.groupMatches || []).map(match => [match.id, match]));
+    const knockoutMapSaved = new Map((saved.knockoutMatches || []).map(match => [match.id, match]));
+
+    state.groupMatches = baseData.groupMatches.map(baseMatch => {
+      const stored = groupMap.get(baseMatch.id) || {};
+      return {
+        ...clone(baseMatch),
+        hg: stored.hg === undefined ? baseMatch.hg : safeNumber(stored.hg),
+        ag: stored.ag === undefined ? baseMatch.ag : safeNumber(stored.ag)
+      };
+    });
+
+    state.knockoutMatches = baseData.knockoutMatches.map(baseMatch => {
+      const stored = knockoutMapSaved.get(baseMatch.id) || {};
+      return {
+        ...clone(baseMatch),
+        hg: stored.hg === undefined ? baseMatch.hg : safeNumber(stored.hg),
+        ag: stored.ag === undefined ? baseMatch.ag : safeNumber(stored.ag),
+        hp: stored.hp === undefined ? baseMatch.hp : safeNumber(stored.hp),
+        ap: stored.ap === undefined ? baseMatch.ap : safeNumber(stored.ap),
+        ...(stored.note ? { note: String(stored.note) } : {})
+      };
+    });
+  }
+
   function loadSaved() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
       const saved = JSON.parse(raw);
-      if (Array.isArray(saved.groupMatches)) {
-        const byId = new Map(saved.groupMatches.map(match => [match.id, match]));
-        state.groupMatches = baseData.groupMatches.map(match => ({ ...clone(match), ...(byId.get(match.id) || {}) }));
+
+      if (!savedStructureIsCompatible(saved)) {
+        console.warn("Dados locais incompatíveis foram reparados automaticamente.");
+        localStorage.removeItem(STORAGE_KEY);
+        state.groupMatches = clone(baseData.groupMatches);
+        state.knockoutMatches = clone(baseData.knockoutMatches);
+        state.scorers = normalizeScorers(baseData.topScorers || []);
+        state.goalEvents = normalizeGoalEvents(baseData.goalEvents || {});
+        return;
       }
-      if (Array.isArray(saved.knockoutMatches)) {
-        const byId = new Map(saved.knockoutMatches.map(match => [match.id, match]));
-        state.knockoutMatches = baseData.knockoutMatches.map(match => ({ ...clone(match), ...(byId.get(match.id) || {}) }));
-      }
-      if (Array.isArray(saved.scorers)) {
-        state.scorers = normalizeScorers(saved.scorers);
-      }
-      if (saved.goalEvents && typeof saved.goalEvents === "object") {
-        state.goalEvents = normalizeGoalEvents(saved.goalEvents);
-      }
+
+      restoreMatchesFromSaved(saved);
+      if (Array.isArray(saved.scorers)) state.scorers = normalizeScorers(saved.scorers);
+      if (saved.goalEvents && typeof saved.goalEvents === "object") state.goalEvents = normalizeGoalEvents(saved.goalEvents);
     } catch (error) {
       console.warn("Não foi possível carregar o backup local.", error);
     }
@@ -244,7 +294,7 @@
 
   function saveState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify({
-      version: 5,
+      version: 6.1,
       savedAt: new Date().toISOString(),
       groupMatches: state.groupMatches,
       knockoutMatches: state.knockoutMatches,
@@ -276,6 +326,10 @@
       if (match.hg === null || match.ag === null) return;
       const home = rows.get(match.home);
       const away = rows.get(match.away);
+      if (!home || !away) {
+        console.warn(`Partida ${match.id} ignorada na tabela do Grupo ${group}: participantes incompatíveis.`);
+        return;
+      }
       home.j++; away.j++;
       home.gp += match.hg; home.gc += match.ag;
       away.gp += match.ag; away.gc += match.hg;
@@ -662,45 +716,105 @@
     });
   }
 
+  function findRemoteMatchTarget(remote) {
+    const number = Number(remote.number);
+    const collection = number <= 72 ? state.groupMatches : state.knockoutMatches;
+    const homeCode = String(remote.homeCode || "").toUpperCase();
+    const awayCode = String(remote.awayCode || "").toUpperCase();
+    const hasValidPair = Boolean(homeCode && awayCode && team(homeCode) && team(awayCode));
+
+    if (hasValidPair) {
+      const exact = collection.find(match => match.home === homeCode && match.away === awayCode);
+      if (exact) return { local: exact, reversed: false };
+      const reversed = collection.find(match => match.home === awayCode && match.away === homeCode);
+      if (reversed) return { local: reversed, reversed: true };
+    }
+
+    // Nunca associa fase de grupos apenas pelo número: fontes diferentes podem
+    // ordenar as 72 partidas de maneiras distintas.
+    if (number <= 72) return null;
+
+    const numbered = collection.find(match => match.id === `m${number}`);
+    if (!numbered || !hasValidPair) return null;
+
+    // Para fases ainda não montadas, aceita o número somente quando os dois
+    // participantes ainda estão vazios. As fases anteriores são processadas
+    // antes, então normalmente o pareamento exato já terá sido encontrado.
+    if (!numbered.home && !numbered.away && number > 88) {
+      numbered.home = homeCode;
+      numbered.away = awayCode;
+      return { local: numbered, reversed: false };
+    }
+
+    return null;
+  }
+
+  function applyRemoteMatch(remote) {
+    const target = findRemoteMatchTarget(remote);
+    if (!target) return { matched: 0, changed: 0 };
+
+    const { local, reversed } = target;
+    let changed = 0;
+    if (remote.started || remote.finished) {
+      const remoteHomeScore = normalizeRemoteScore(remote.homeScore);
+      const remoteAwayScore = normalizeRemoteScore(remote.awayScore);
+      const hg = reversed ? remoteAwayScore : remoteHomeScore;
+      const ag = reversed ? remoteHomeScore : remoteAwayScore;
+
+      if (hg !== null && ag !== null) {
+        if (local.hg !== hg || local.ag !== ag) changed += 1;
+        local.hg = hg;
+        local.ag = ag;
+      }
+
+      if (local.stage && local.stage !== "GROUP") {
+        const remoteHomePenalty = normalizeRemoteScore(remote.homePenalty);
+        const remoteAwayPenalty = normalizeRemoteScore(remote.awayPenalty);
+        local.hp = reversed ? remoteAwayPenalty : remoteHomePenalty;
+        local.ap = reversed ? remoteHomePenalty : remoteAwayPenalty;
+      }
+    }
+
+    if (Array.isArray(remote.goalEvents) && remote.goalEvents.length) {
+      state.goalEvents[local.id] = remote.goalEvents.map((event, index) => ({
+        id: event.id || `remote-${local.id}-${index}`,
+        team: event.team || null,
+        player: String(event.player || "Jogador"),
+        minute: String(event.minute || ""),
+        type: event.type || "goal"
+      }));
+    }
+
+    return { matched: 1, changed };
+  }
+
   function applyRemoteUpdate(payload) {
     const matches = Array.isArray(payload?.matches) ? payload.matches : [];
     if (!matches.length) throw new Error("A fonte não retornou partidas utilizáveis.");
+
+    const ranges = [[1,72],[73,88],[89,96],[97,100],[101,102],[103,104]];
     let changed = 0;
-    matches.forEach(remote => {
-      const number = Number(remote.number);
-      const localId = number <= 72 ? `g${String(number).padStart(2,"0")}` : `m${number}`;
-      const collection = number <= 72 ? state.groupMatches : state.knockoutMatches;
-      const local = collection.find(match => match.id === localId);
-      if (!local) return;
-      if (remote.homeCode && team(remote.homeCode) && number <= 88) local.home = remote.homeCode;
-      if (remote.awayCode && team(remote.awayCode) && number <= 88) local.away = remote.awayCode;
-      if (remote.started || remote.finished) {
-        const hg = normalizeRemoteScore(remote.homeScore);
-        const ag = normalizeRemoteScore(remote.awayScore);
-        if (hg !== null && ag !== null) {
-          if (local.hg !== hg || local.ag !== ag) changed += 1;
-          local.hg = hg; local.ag = ag;
-        }
-        if (number > 72) {
-          local.hp = normalizeRemoteScore(remote.homePenalty);
-          local.ap = normalizeRemoteScore(remote.awayPenalty);
-        }
-      }
-      if (Array.isArray(remote.goalEvents) && remote.goalEvents.length) {
-        state.goalEvents[localId] = remote.goalEvents.map((event,index) => ({
-          id:event.id || `remote-${localId}-${index}`,
-          team:event.team || null,
-          player:String(event.player || "Jogador"),
-          minute:String(event.minute || ""),
-          type:event.type || "goal"
-        }));
-      }
+    let matched = 0;
+
+    ranges.forEach(([min, max]) => {
+      matches
+        .filter(remote => Number(remote.number) >= min && Number(remote.number) <= max)
+        .forEach(remote => {
+          const result = applyRemoteMatch(remote);
+          changed += result.changed;
+          matched += result.matched;
+        });
+      propagateBracket();
     });
-    propagateBracket();
+
+    if (!matched) {
+      throw new Error("A fonte respondeu, mas os confrontos não coincidiram com a tabela do aplicativo.");
+    }
+
     updateScorersFromGoalEvents();
     saveState();
     renderAll();
-    return changed;
+    return { changed, matched, skipped: Math.max(0, matches.length - matched) };
   }
 
   async function updateLiveData() {
@@ -722,9 +836,9 @@
       } else {
         payload = await fetchCommunityDataDirect();
       }
-      const changed = applyRemoteUpdate(payload);
+      const result = applyRemoteUpdate(payload);
       const time = new Intl.DateTimeFormat("pt-BR", {hour:"2-digit", minute:"2-digit"}).format(new Date());
-      if (status) status.innerHTML = `<strong>Atualizado às ${time}</strong> • ${changed} placar(es) alterado(s) • fonte: ${escapeHtml(payload.provider || "API configurada")}`;
+      if (status) status.innerHTML = `<strong>Atualizado às ${time}</strong> • ${result.changed} placar(es) alterado(s) • ${result.matched} partida(s) conferida(s) • fonte: ${escapeHtml(payload.provider || "API configurada")}`;
     } catch (error) {
       console.error(error);
       if (status) status.innerHTML = `<strong>Não foi possível atualizar.</strong> ${escapeHtml(error.message)} ${location.protocol === "file:" ? "Publique a pasta no Netlify para usar a função automática com mais estabilidade." : ""}`;
@@ -1237,7 +1351,7 @@
   function exportBackup() {
     const payload = {
       app: "Copa 2026 — Painel Premium",
-      version: 4,
+      version: 6.1,
       exportedAt: new Date().toISOString(),
       groupMatches: state.groupMatches,
       knockoutMatches: state.knockoutMatches,
@@ -1259,10 +1373,10 @@
       if (!Array.isArray(imported.groupMatches) || !Array.isArray(imported.knockoutMatches)) {
         throw new Error("Estrutura de backup inválida.");
       }
-      const groupMap = new Map(imported.groupMatches.map(match => [match.id, match]));
-      const koMap = new Map(imported.knockoutMatches.map(match => [match.id, match]));
-      state.groupMatches = baseData.groupMatches.map(match => ({ ...clone(match), ...(groupMap.get(match.id) || {}) }));
-      state.knockoutMatches = baseData.knockoutMatches.map(match => ({ ...clone(match), ...(koMap.get(match.id) || {}) }));
+      if (!savedStructureIsCompatible(imported)) {
+        throw new Error("O backup contém confrontos incompatíveis com esta versão do calendário.");
+      }
+      restoreMatchesFromSaved(imported);
       state.scorers = Array.isArray(imported.scorers) ? normalizeScorers(imported.scorers) : normalizeScorers(baseData.topScorers || []);
       state.goalEvents = imported.goalEvents && typeof imported.goalEvents === "object" ? normalizeGoalEvents(imported.goalEvents) : normalizeGoalEvents(baseData.goalEvents || {});
       propagateBracket();

@@ -1,4 +1,4 @@
-# Copa 2026 — Painel Premium v6
+# Copa 2026 — Painel Premium v6.1
 
 Aplicativo web instalável em **HTML, CSS, JavaScript e C++/WebAssembly**, preparado para computador, celular e tablet.
 
@@ -65,3 +65,12 @@ Na aba **Mata-mata**:
 - `data/data.js` — base inicial;
 - `netlify/functions/update-copa.js` — atualização automática;
 - `service-worker.js` — funcionamento offline.
+
+
+## Correção v6.1
+
+- impede que uma API com ordem diferente de partidas troque seleções entre grupos;
+- repara automaticamente dados locais incompatíveis;
+- evita o erro `Cannot read properties of undefined (reading 'j')`;
+- atualiza partidas por confronto (seleções), não apenas pelo número do jogo;
+- renova o cache da PWA para distribuir a correção.

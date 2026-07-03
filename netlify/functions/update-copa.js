@@ -1,6 +1,13 @@
 const DEFAULT_GAMES_URL = "https://worldcup26.ir/get/games";
 const DEFAULT_TEAMS_URL = "https://worldcup26.ir/get/teams";
 
+const MANUAL_SCORER_OVERRIDES = Object.freeze({
+  "83|POR": [
+    { player: "Cristiano Ronaldo", minute: "", type: "penalty" },
+    { player: "Gonçalo Ramos", minute: "90+4", type: "goal" }
+  ]
+});
+
 const SCORER_NAME_ALIASES = Object.freeze({
   "k mbappe": "Kylian Mbappé",
   "kylian mbappe": "Kylian Mbappé",
@@ -22,7 +29,13 @@ const SCORER_NAME_ALIASES = Object.freeze({
   "j manzambi": "Johan Manzambi",
   "johan manzambi": "Johan Manzambi",
   "j quinones": "Julián Quiñones",
-  "julian quinones": "Julián Quiñones"
+  "julian quinones": "Julián Quiñones",
+  "m oyarzabal": "Mikel Oyarzabal",
+  "mikel oyarzabal": "Mikel Oyarzabal",
+  "gvnchalv ramvs": "Gonçalo Ramos",
+  "goncalo ramos": "Gonçalo Ramos",
+  "c ronaldo": "Cristiano Ronaldo",
+  "cristiano ronaldo": "Cristiano Ronaldo"
 });
 
 function extractArray(payload, names = []) {
@@ -209,7 +222,9 @@ exports.handler = async () => {
       const awayScorers = firstValue(item, ["away_scorers", "away_scorer", "scorers.away", "goals.away"]);
       const goalEvents = [
         ...parseScorers(homeScorers, homeCode, number),
-        ...parseScorers(awayScorers, awayCode, number)
+        ...parseScorers(awayScorers, awayCode, number),
+        ...(MANUAL_SCORER_OVERRIDES[`${number}|${homeCode}`] || []).map((item, idx) => ({ id: `manual-${number}-${homeCode}-${idx}`, team: homeCode, player: item.player, minute: item.minute, type: item.type })),
+        ...(MANUAL_SCORER_OVERRIDES[`${number}|${awayCode}`] || []).map((item, idx) => ({ id: `manual-${number}-${awayCode}-${idx}`, team: awayCode, player: item.player, minute: item.minute, type: item.type }))
       ];
 
       return {

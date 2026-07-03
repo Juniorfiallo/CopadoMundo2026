@@ -1,4 +1,4 @@
-# Copa 2026 — Painel Premium v6.2
+# Copa 2026 — Painel Premium v6.3.3
 
 Aplicativo web instalável em **HTML, CSS, JavaScript e C++/WebAssembly**, preparado para computador, celular e tablet.
 
@@ -76,7 +76,7 @@ Na aba **Mata-mata**:
 - renova o cache da PWA para distribuir a correção.
 
 
-## Correção v6.2 — artilharia limpa
+## Correção v6.3 — artilharia limpa
 
 - interpreta corretamente listas de artilheiros no formato de array PostgreSQL, como `{"Jogador A","Jogador B"}`;
 - separa cada jogador individualmente, em vez de exibir a lista inteira como um único nome;

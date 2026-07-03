@@ -29,7 +29,13 @@
     "j manzambi": "Johan Manzambi",
     "johan manzambi": "Johan Manzambi",
     "j quinones": "Julián Quiñones",
-    "julian quinones": "Julián Quiñones"
+    "julian quinones": "Julián Quiñones",
+    "m oyarzabal": "Mikel Oyarzabal",
+    "mikel oyarzabal": "Mikel Oyarzabal",
+    "gvnchalv ramvs": "Gonçalo Ramos",
+    "goncalo ramos": "Gonçalo Ramos",
+    "c ronaldo": "Cristiano Ronaldo",
+    "cristiano ronaldo": "Cristiano Ronaldo"
   });
 
   function canonicalPlayerName(value) {
@@ -116,6 +122,8 @@
     goalEvents: normalizeGoalEvents(baseData.goalEvents || {})
   };
 
+  applyManualMatchEventOverrides();
+
   let wasmWinner = null;
   let bracketZoom = Number(localStorage.getItem("copa2026-bracket-zoom-v2")) || 1;
   let bracketFitScale = 1;
@@ -169,6 +177,7 @@
     "ismaila sarr": "assets/scorer-ismaila-sarr.jpg",
     "johan manzambi": "assets/scorer-johan-manzambi.jpg",
     "julian quinones": "assets/scorer-julian-quinones.jpg",
+    "mikel oyarzabal": "assets/scorer-mikel-oyarzabal.jpg",
     "kylian mbappe": "assets/scorer-kylian-mbappe.jpg",
     "lionel messi": "assets/scorer-lionel-messi.jpg",
     "vinicius junior": "assets/scorer-vinicius-junior.jpg"
@@ -205,6 +214,16 @@
       (b.goals ?? 0) - (a.goals ?? 0)
       || String(a.name).localeCompare(String(b.name), "pt-BR")
     );
+  }
+
+  function carouselScorers() {
+    const activeTeams = getActiveTeamCodes();
+    const withImages = sortedScorers().map((item, index) => ({ item, index })).filter(({ item }) => scorerImageFor(item));
+    return withImages.sort((a, b) =>
+      Number(activeTeams.has(b.item.team)) - Number(activeTeams.has(a.item.team))
+      || (b.item.goals ?? 0) - (a.item.goals ?? 0)
+      || a.index - b.index
+    ).map(({ item }) => item).slice(0, 10);
   }
 
   function safeNumber(value) {
@@ -359,6 +378,7 @@
         state.knockoutMatches = clone(baseData.knockoutMatches);
         state.scorers = normalizeScorers(baseData.topScorers || []);
         state.goalEvents = normalizeGoalEvents(baseData.goalEvents || {});
+      applyManualMatchEventOverrides();
         return;
       }
 
@@ -497,18 +517,31 @@
       .sort((a, b) => goalMinuteValue(a.minute) - goalMinuteValue(b.minute));
   }
 
+  function applyManualMatchEventOverrides() {
+    Object.entries(MANUAL_MATCH_EVENT_OVERRIDES).forEach(([matchId, events]) => {
+      const normalized = normalizeGoalEvents({ [matchId]: events })[matchId] || [];
+      const existing = Array.isArray(state.goalEvents[matchId]) ? state.goalEvents[matchId] : [];
+      const preserved = existing.filter(event => !normalized.some(item => scorerKey(item.player, item.team) === scorerKey(event.player, event.team) && String(item.minute || "") === String(event.minute || "")));
+      state.goalEvents[matchId] = normalizeGoalEvents({ [matchId]: [...preserved, ...normalized] })[matchId] || [];
+    });
+  }
+
   function renderGoalTooltip(match, teamCode) {
     if (!teamCode) return "";
     const events = goalEventsFor(match.id, teamCode);
     const score = teamCode === match.home ? match.hg : match.ag;
     const selection = team(teamCode);
     const content = events.length
-      ? `<ul>${events.map(event => `<li><span>⚽ ${escapeHtml(event.player)}${event.type === "penalty" ? " (pên.)" : ""}</span><strong>${escapeHtml(event.minute)}'</strong></li>`).join("")}</ul>`
+      ? `<ul>${events.map(event => `<li><span>⚽ ${escapeHtml(event.player)}${event.type === "penalty" ? " (pên.)" : ""}</span>${event.minute ? `<strong>${escapeHtml(event.minute)}'</strong>` : ""}</li>`).join("")}</ul>`
       : `<p>${score === 0 ? "Não marcou gols nesta partida." : "Autores dos gols ainda não cadastrados."}</p>`;
+    const shootout = match.hg !== null && match.ag !== null && match.hg === match.ag && match.hp !== null && match.ap !== null
+      ? `<small>Decisão nos pênaltis: ${match.hp} × ${match.ap}</small>`
+      : "";
     return `<div class="goal-tooltip" role="tooltip">
       <div class="goal-tooltip__title"><span>${selection?.flag || "⚽"}</span><strong>${escapeHtml(selection?.name || teamCode)}</strong></div>
       ${content}
       <small>${events.length} ${events.length === 1 ? "gol cadastrado" : "gols cadastrados"}</small>
+      ${shootout}
     </div>`;
   }
 
@@ -859,6 +892,8 @@
       counts.set(key, entry);
     });
 
+    applyManualMatchEventOverrides();
+
     const preserved = normalizeScorers(state.scorers.filter(item => !String(item.id || "").startsWith(REMOTE_SCORER_PREFIX)));
     const existing = new Map(preserved.map(item => [scorerKey(item.name, item.team), item]));
 
@@ -1197,7 +1232,7 @@
   function renderScorerCarousel() {
     const container = document.getElementById("scorerCarousel");
     if (!container) return;
-    const topTen = sortedScorers().slice(0, 10);
+    const topTen = carouselScorers();
     if (!topTen.length) {
       container.innerHTML = `<div class="empty-state">Nenhum artilheiro cadastrado para o carrossel.</div>`;
       return;
@@ -1628,6 +1663,7 @@
       state.knockoutMatches = clone(baseData.knockoutMatches);
       state.scorers = normalizeScorers(baseData.topScorers || []);
       state.goalEvents = normalizeGoalEvents(baseData.goalEvents || {});
+      applyManualMatchEventOverrides();
       localStorage.removeItem(STORAGE_KEY);
       propagateBracket();
       saveState();

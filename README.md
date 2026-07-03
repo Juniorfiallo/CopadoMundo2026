@@ -1,6 +1,12 @@
-# Copa 2026 — Painel Premium v6.5
+# Copa 2026 — Painel Premium v6.5.1
 
 Aplicativo PWA em HTML, CSS e JavaScript, com motor opcional em C++/WebAssembly, para acompanhar resultados, grupos, mata-mata, autores dos gols e artilharia da Copa do Mundo 2026.
+
+## Correção v6.5.1
+
+- carrossel principal numerado de 1 a 10;
+- carrossel secundário numerado a partir de 11;
+- foto de Ismael Saibari reenquadrada e centralizada no padrão 900 × 1200.
 
 ## Atualizações da v6.5
 

@@ -1289,7 +1289,7 @@
             : `<div class="scorer-carousel__placeholder"><span>${selection?.flag || "⚽"}</span><strong>${escapeHtml(item.name)}</strong></div>`;
           return `<article class="scorer-carousel__slide ${index === scorerCarouselIndex ? "is-active" : ""}" data-carousel-slide="${index}" aria-hidden="${index === scorerCarouselIndex ? "false" : "true"}">
             <div class="scorer-carousel__frame">
-              <div class="scorer-carousel__rank">#${sortedScorers().findIndex(rankItem => scorerKey(rankItem.name, rankItem.team) === scorerKey(item.name, item.team)) + 1}</div>
+              <div class="scorer-carousel__rank">#${index + 1}</div>
               ${imageMarkup}
               <div class="scorer-carousel__overlay">
                 <div class="scorer-carousel__team"><span>${selection?.flag || "⚽"}</span>${escapeHtml(selection?.name || item.team || "Seleção")}</div>
@@ -1353,7 +1353,7 @@
         ${players.map((item, index) => {
           const selection = team(item.team);
           const image = scorerImageFor(item);
-          const ranking = sortedScorers().findIndex(rankItem => scorerKey(rankItem.name, rankItem.team) === scorerKey(item.name, item.team)) + 1;
+          const ranking = 11 + index;
           return `<article class="scorer-carousel__slide ${index === contenderCarouselIndex ? "is-active" : ""}" data-contender-slide="${index}" aria-hidden="${index === contenderCarouselIndex ? "false" : "true"}">
             <div class="scorer-carousel__frame">
               <div class="scorer-carousel__rank">#${ranking}</div>

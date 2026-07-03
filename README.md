@@ -1,4 +1,4 @@
-# Copa 2026 — Painel Premium v6.1
+# Copa 2026 — Painel Premium v6.2
 
 Aplicativo web instalável em **HTML, CSS, JavaScript e C++/WebAssembly**, preparado para computador, celular e tablet.
 
@@ -74,3 +74,15 @@ Na aba **Mata-mata**:
 - evita o erro `Cannot read properties of undefined (reading 'j')`;
 - atualiza partidas por confronto (seleções), não apenas pelo número do jogo;
 - renova o cache da PWA para distribuir a correção.
+
+
+## Correção v6.2 — artilharia limpa
+
+- interpreta corretamente listas de artilheiros no formato de array PostgreSQL, como `{"Jogador A","Jogador B"}`;
+- separa cada jogador individualmente, em vez de exibir a lista inteira como um único nome;
+- aceita no ranking apenas nomes completos de jogadores;
+- rejeita agregados, JSON, abreviações incompletas e textos malformados;
+- só substitui eventos de gols quando a quantidade de autores coincide com o placar da partida;
+- mantém bandeira, nome e sobrenome, seleção e o status **em disputa** ou **eliminado / bloqueado**;
+- remove automaticamente a artilharia corrompida salva pelas versões 6.0/6.1;
+- restaura a base confiável do top 10 e renova o cache da PWA.

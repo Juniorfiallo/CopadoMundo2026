@@ -1,4 +1,4 @@
-const CACHE_NAME = "copa-2026-premium-v6-3";
+const CACHE_NAME = "copa-2026-premium-v6-4";
 const APP_SHELL = [
   "./",
   "./index.html",

@@ -1468,6 +1468,23 @@
     row.classList.toggle("is-tooltip-open");
   }
 
+
+  function updateResponsiveViewport() {
+    const viewportHeight = window.visualViewport?.height || window.innerHeight || document.documentElement.clientHeight;
+    document.documentElement.style.setProperty("--app-viewport-height", `${Math.round(viewportHeight)}px`);
+    document.documentElement.classList.toggle("is-phone-layout", window.matchMedia("(max-width: 700px)").matches);
+    document.documentElement.classList.toggle("is-tablet-layout", window.matchMedia("(min-width: 701px) and (max-width: 1180px)").matches);
+  }
+
+  function refreshResponsiveBracket() {
+    updateResponsiveViewport();
+    if (!document.getElementById("chave")?.classList.contains("is-active")) return;
+    requestAnimationFrame(() => {
+      applyBracketZoom(false);
+      requestAnimationFrame(() => centerBracketViewport("auto"));
+    });
+  }
+
   function setupPwaInstall() {
     const installButton = document.getElementById("installAppBtn");
     window.addEventListener("beforeinstallprompt", event => {
@@ -1644,9 +1661,9 @@
     const carousel = document.getElementById("scorerCarousel");
     carousel?.addEventListener("mouseenter", () => window.clearInterval(scorerCarouselTimer));
     carousel?.addEventListener("mouseleave", startScorerCarousel);
-    window.addEventListener("resize", () => {
-      if (document.getElementById("chave")?.classList.contains("is-active")) applyBracketZoom(true);
-    });
+    window.addEventListener("resize", refreshResponsiveBracket, { passive: true });
+    window.addEventListener("orientationchange", () => window.setTimeout(refreshResponsiveBracket, 180), { passive: true });
+    window.visualViewport?.addEventListener("resize", updateResponsiveViewport, { passive: true });
     document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => switchTab(tab.dataset.tab)));
     document.querySelectorAll(".jump").forEach(button => button.addEventListener("click", () => switchTab(button.dataset.go)));
     document.getElementById("matchSearch").addEventListener("input", renderMatchesList);
@@ -1672,6 +1689,7 @@
   }
 
   function init() {
+    updateResponsiveViewport();
     document.getElementById("dataNote").textContent = baseData.meta.note;
     document.getElementById("sourceLabel").textContent = baseData.meta.sourceLabel;
     loadSaved();
@@ -1682,7 +1700,6 @@
     renderAll();
     startScorerCarousel();
     loadWasmEngine();
-    window.addEventListener("resize", () => requestAnimationFrame(applyBracketZoom));
 
     const hash = location.hash.replace("#", "");
     if (["painel","grupos","chave","jogos"].includes(hash)) switchTab(hash);

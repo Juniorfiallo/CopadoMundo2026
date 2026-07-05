@@ -8,7 +8,7 @@
     : JSON.parse(JSON.stringify(value));
 
   const REMOTE_SCORER_PREFIX = "remote-scorer-";
-  const DATA_VERSION = 6.7;
+  const DATA_VERSION = 6.5;
   const MANUAL_MATCH_EVENT_OVERRIDES = Object.freeze({
     m83: [
       {team:"CRO", player:"Ivan Perišić", minute:"53", type:"goal"},
@@ -23,14 +23,6 @@
     m85: [
       {team:"SUI", player:"Breel Embolo", minute:"10", type:"goal"},
       {team:"SUI", player:"Dan Ndoye", minute:"46", type:"goal"}
-    ],
-    m89: [
-      {team:"MAR", player:"Azzedine Ounahi", minute:"50", type:"goal"},
-      {team:"MAR", player:"Azzedine Ounahi", minute:"82", type:"goal"},
-      {team:"MAR", player:"Soufiane Rahimi", minute:"90+8", type:"goal"}
-    ],
-    m90: [
-      {team:"FRA", player:"Kylian Mbappé", minute:"70", type:"penalty"}
     ]
   });
   const SCORER_NAME_ALIASES = Object.freeze({
@@ -166,21 +158,17 @@
     ]));
   }
 
-  let scorerSeed = normalizeScorers(baseData.topScorers || []);
-  let scorerBaselineGoalEvents = normalizeGoalEvents(baseData.goalEvents || {});
-
   const state = {
     groupMatches: clone(baseData.groupMatches),
     knockoutMatches: clone(baseData.knockoutMatches),
-    scorers: normalizeScorers(scorerSeed),
+    scorers: normalizeScorers(baseData.topScorers || []),
     goalEvents: normalizeGoalEvents(baseData.goalEvents || {})
   };
 
   applyManualMatchEventOverrides();
 
   let wasmWinner = null;
-  const storedBracketZoom = Number(localStorage.getItem("copa2026-bracket-zoom-v3"));
-  let bracketZoom = Number.isFinite(storedBracketZoom) && storedBracketZoom > 0 ? storedBracketZoom : (window.innerWidth <= 760 ? 1.8 : 1);
+  let bracketZoom = Number(localStorage.getItem("copa2026-bracket-zoom-v2")) || 1;
   let bracketFitScale = 1;
   let scorerCarouselIndex = 0;
   let scorerCarouselTimer = null;
@@ -190,7 +178,7 @@
   let deferredInstallPrompt = null;
   let syncingBracketScroll = false;
   const BRACKET_ZOOM_MIN = 0.4;
-  const BRACKET_ZOOM_MAX = 5;
+  const BRACKET_ZOOM_MAX = 2.5;
   const SCORER_CAROUSEL_INTERVAL = 5200;
   const CONTENDER_CAROUSEL_INTERVAL = 4300;
   const LIVE_UPDATE_ENDPOINT = "/.netlify/functions/update-copa";
@@ -236,8 +224,6 @@
     "johan manzambi": "assets/scorer-johan-manzambi.jpg",
     "julian quinones": "assets/scorer-julian-quinones.jpg",
     "mikel oyarzabal": "assets/scorer-mikel-oyarzabal.jpg",
-    "brian brobbey": "https://sassets.knvb.nl/sites/onsoranje.nl/files/players/ac1404b1a1ac6bcfd2b3b71febcf03d8.png",
-    "cody gakpo": "https://cdn-img.staticzz.com/img/planteis/new/41/21/11084121_cody_gakpo_20240608073739.jpg",
     "kylian mbappe": "assets/scorer-kylian-mbappe.jpg",
     "lionel messi": "assets/scorer-lionel-messi.jpg",
     "vinicius junior": "assets/scorer-vinicius-junior.jpg",
@@ -282,68 +268,26 @@
   }
 
   function mainCarouselScorers() {
-    return sortedScorers().slice(0, 10);
+    const activeTeams = getActiveTeamCodes();
+    return sortedScorers()
+      .filter(item => scorerImageFor(item))
+      .sort((a, b) =>
+        (b.goals ?? 0) - (a.goals ?? 0)
+        || Number(activeTeams.has(b.team)) - Number(activeTeams.has(a.team))
+        || String(a.name).localeCompare(String(b.name), "pt-BR")
+      )
+      .slice(0, 10);
   }
 
   function contenderCarouselScorers() {
-    return sortedScorers().slice(10, 15);
-  }
-
-  function buildKnockoutGoalScorerMap(goalEventsByMatch) {
-    const tally = new Map();
-    Object.entries(goalEventsByMatch || {}).forEach(([matchId, events]) => {
-      const match = state.knockoutMatches.find(item => item.id === matchId) || baseData.knockoutMatches.find(item => item.id === matchId);
-      if (!match) return;
-      (Array.isArray(events) ? events : []).forEach((event) => {
-        const player = canonicalPlayerName(event?.player);
-        const teamCode = String(event?.team || '').toUpperCase();
-        if (!isCompletePlayerName(player) || !team(teamCode)) return;
-        const key = scorerKey(player, teamCode);
-        const current = tally.get(key) || {
-          id: `auto-${normalizeNameKey(player)}-${teamCode}`,
-          name: player,
-          team: teamCode,
-          goals: 0,
-          image: scorerImageFor({ name: player, team: teamCode })
-        };
-        current.goals += 1;
-        if (!current.image) current.image = scorerImageFor(current);
-        tally.set(key, current);
-      });
-    });
-    return tally;
-  }
-
-  function refreshScorersFromGoalEvents() {
-    const merged = new Map(normalizeScorers(scorerSeed).map(item => [
-      scorerKey(item.name, item.team),
-      { ...item, image: item.image || scorerImageFor(item) }
-    ]));
-    const seededTallies = buildKnockoutGoalScorerMap(scorerBaselineGoalEvents || {});
-    const currentTallies = buildKnockoutGoalScorerMap(state.goalEvents || {});
-    const keys = new Set([...seededTallies.keys(), ...currentTallies.keys()]);
-
-    keys.forEach((key) => {
-      const seeded = seededTallies.get(key);
-      const current = currentTallies.get(key);
-      const delta = (current?.goals || 0) - (seeded?.goals || 0);
-      if (!delta) return;
-      const source = current || seeded;
-      if (!source) return;
-      const baseItem = merged.get(key) || {
-        id: source.id || `auto-${normalizeNameKey(source.name)}-${source.team}`,
-        name: source.name,
-        team: source.team,
-        goals: 0,
-        image: source.image || scorerImageFor(source)
-      };
-      baseItem.goals = Math.max(0, (baseItem.goals || 0) + delta);
-      if (!baseItem.image) baseItem.image = scorerImageFor(baseItem);
-      if (baseItem.goals > 0) merged.set(key, baseItem);
-      else merged.delete(key);
-    });
-
-    state.scorers = normalizeScorers([...merged.values()].filter(item => (item.goals || 0) > 0));
+    const activeTeams = getActiveTeamCodes();
+    const mainKeys = new Set(mainCarouselScorers().map(item => scorerKey(item.name, item.team)));
+    return sortedScorers()
+      .filter(item => (item.goals ?? 0) === 3)
+      .filter(item => activeTeams.has(item.team))
+      .filter(item => scorerImageFor(item))
+      .filter(item => !mainKeys.has(scorerKey(item.name, item.team)))
+      .sort((a, b) => String(a.name).localeCompare(String(b.name), "pt-BR"));
   }
 
   function safeNumber(value) {
@@ -496,12 +440,9 @@
         localStorage.removeItem(STORAGE_KEY);
         state.groupMatches = clone(baseData.groupMatches);
         state.knockoutMatches = clone(baseData.knockoutMatches);
-        scorerSeed = normalizeScorers(baseData.topScorers || []);
-        scorerBaselineGoalEvents = normalizeGoalEvents(baseData.goalEvents || {});
-        state.scorers = normalizeScorers(scorerSeed);
+        state.scorers = normalizeScorers(baseData.topScorers || []);
         state.goalEvents = normalizeGoalEvents(baseData.goalEvents || {});
-        applyManualMatchEventOverrides();
-        refreshScorersFromGoalEvents();
+      applyManualMatchEventOverrides();
         return;
       }
 
@@ -513,24 +454,18 @@
           if (!seeded || seeded.hg === null || seeded.ag === null) return match;
           return { ...match, hg: seeded.hg, ag: seeded.ag, hp: seeded.hp, ap: seeded.ap, ...(seeded.note ? {note:seeded.note} : {}) };
         });
-        scorerSeed = normalizeScorers(baseData.topScorers || []);
-        scorerBaselineGoalEvents = normalizeGoalEvents(baseData.goalEvents || {});
-        state.scorers = normalizeScorers(scorerSeed);
+        state.scorers = normalizeScorers(baseData.topScorers || []);
         state.goalEvents = normalizeGoalEvents({
           ...(saved.goalEvents && typeof saved.goalEvents === "object" ? saved.goalEvents : {}),
           ...(baseData.goalEvents || {})
         });
         applyManualMatchEventOverrides();
-        refreshScorersFromGoalEvents();
         saveState();
         console.warn("A artilharia foi atualizada para a lista confiável da versão 6.5.");
       } else {
-        if (Array.isArray(saved.scorerSeed)) scorerSeed = normalizeScorers(saved.scorerSeed);
-        else if (Array.isArray(saved.scorers)) scorerSeed = normalizeScorers(saved.scorers);
-        scorerBaselineGoalEvents = normalizeGoalEvents(saved.scorerBaselineGoalEvents || baseData.goalEvents || {});
+        if (Array.isArray(saved.scorers)) state.scorers = normalizeScorers(saved.scorers);
         if (saved.goalEvents && typeof saved.goalEvents === "object") state.goalEvents = normalizeGoalEvents(saved.goalEvents);
         applyManualMatchEventOverrides();
-        refreshScorersFromGoalEvents();
       }
     } catch (error) {
       console.warn("Não foi possível carregar o backup local.", error);
@@ -544,8 +479,6 @@
       groupMatches: state.groupMatches,
       knockoutMatches: state.knockoutMatches,
       scorers: state.scorers,
-      scorerSeed,
-      scorerBaselineGoalEvents,
       goalEvents: state.goalEvents
     }));
     const now = new Intl.DateTimeFormat("pt-BR", { hour:"2-digit", minute:"2-digit", second:"2-digit" }).format(new Date());
@@ -811,7 +744,7 @@
     const range = document.getElementById("bracketZoomRange");
     if (label) label.textContent = `${percent}%`;
     if (range) range.value = String(percent);
-    localStorage.setItem("copa2026-bracket-zoom-v3", String(bracketZoom));
+    localStorage.setItem("copa2026-bracket-zoom-v2", String(bracketZoom));
     updateBracketScrollTrack();
     if (recenter) requestAnimationFrame(() => requestAnimationFrame(() => centerBracketViewport("auto")));
   }
@@ -847,64 +780,32 @@
     </article>`;
   }
 
-  function renderPosterColumn(title, ids, accent) {
-    const map = knockoutMap();
-    return `<section class="poster-round-column" style="--poster-accent:${accent}">
-      <h3>${title}</h3>
-      <div>${ids.map(id => renderPosterMatch(map.get(id))).join("")}</div>
-    </section>`;
-  }
-
-  function renderPosterSide(sideKey) {
-    const side = bracketSides[sideKey];
-    const columns = sideKey === "left"
-      ? [
-          ["16-avos", side.outer, "#1b7dff"],
-          ["Oitavas", side.r16, "#14c86e"],
-          ["Quartas", side.qf, "#f4d35d"],
-          ["Semifinal", side.sf, "#ed3b77"]
-        ]
-      : [
-          ["Semifinal", side.sf, "#ed3b77"],
-          ["Quartas", side.qf, "#f4d35d"],
-          ["Oitavas", side.r16, "#14c86e"],
-          ["16-avos", side.outer, "#1b7dff"]
-        ];
-    return `<div class="poster-bracket-side poster-bracket-side--${sideKey}">${columns.map(([title, ids, accent]) => renderPosterColumn(title, ids, accent)).join("")}</div>`;
-  }
-
   function renderPrintPoster() {
     const poster = document.getElementById("printPoster");
     if (!poster) return;
+    const stages = [
+      ["16-avos", "R32"],
+      ["Oitavas", "R16"],
+      ["Quartas", "QF"],
+      ["Semifinais", "SF"],
+      ["Terceiro lugar", "THIRD"],
+      ["Final", "FINAL"]
+    ];
     const final = state.knockoutMatches.find(match => match.stage === "FINAL");
     const champion = getWinner(final);
-    const championTeam = team(champion);
     poster.innerHTML = `<div class="poster-shell">
-      <header class="poster-header poster-header--premium">
-        <div class="poster-header__logo"><img src="assets/logo-oficial.png" alt="Logo Copa 2026" /></div>
-        <div class="poster-header__copy"><p>WE ARE 26</p><h1>FIFA WORLD CUP 2026</h1><span>Chaveamento oficial • placares • bandeiras • campeão</span></div>
-        <div class="poster-header__ball"><img src="assets/bola-oficial.png" alt="Bola oficial" /></div>
+      <header class="poster-header">
+        <img src="assets/logo-oficial.png" alt="Logo Copa 2026" />
+        <div><p>WE ARE 26</p><h1>FIFA WORLD CUP 2026</h1><span>Mata-mata completo • placares, bandeiras e campeão</span></div>
+        <img src="assets/bola-oficial.png" alt="Bola oficial" />
       </header>
-      <div class="poster-bracket-grid">
-        ${renderPosterSide("left")}
-        <section class="poster-champion-center">
-          <div class="poster-center-kicker">CENTRO DA CHAVE</div>
-          <img class="poster-center-logo" src="assets/logo-oficial.png" alt="Taça da Copa" />
-          <h2>GRANDE FINAL</h2>
-          ${renderPosterMatch(final)}
-          <div class="poster-champion-card">
-            <small>CAMPEÃO</small>
-            <strong>${championTeam ? `${championTeam.flag} ${escapeHtml(championTeam.name)}` : "🏆 A definir"}</strong>
-            <span>${championTeam ? "O mundo tem um novo campeão" : "A final aguarda os classificados"}</span>
-          </div>
-          <img class="poster-center-mascots" src="assets/mascotes-officiais.png" alt="Mascotes oficiais" />
-        </section>
-        ${renderPosterSide("right")}
+      <div class="poster-stage-grid">
+        ${stages.map(([title, stage]) => `<section class="poster-stage poster-stage--${stage.toLowerCase()}"><h2>${title}</h2><div>${state.knockoutMatches.filter(match => match.stage === stage).sort((a,b) => knockoutMatchNumber(a)-knockoutMatchNumber(b)).map(renderPosterMatch).join("")}</div></section>`).join("")}
       </div>
-      <footer class="poster-brazil-footer">
-        <div class="poster-brazil-photo"><img src="assets/brasil-rumo-ao-hexa.jpg" alt="Seleção Brasileira na Copa de 2026" /></div>
-        <div class="poster-brazil-copy"><small>SELEÇÃO BRASILEIRA • COPA 2026</small><strong>Brasil, Rumo ao Hexa</strong><span>Atualizado em ${new Intl.DateTimeFormat("pt-BR", {dateStyle:"medium", timeStyle:"short"}).format(new Date())}</span></div>
-        <img class="poster-brazil-brand" src="assets/we-are-26.png" alt="We Are 26" />
+      <footer class="poster-footer">
+        <img src="assets/we-are-26.png" alt="We Are 26" />
+        <div><small>CAMPEÃO</small><strong>${champion ? `${team(champion)?.flag || ""} ${escapeHtml(team(champion)?.name || champion)}` : "A definir"}</strong><span>Atualizado em ${new Intl.DateTimeFormat("pt-BR", {dateStyle:"medium", timeStyle:"short"}).format(new Date())}</span></div>
+        <div class="poster-footer__brand">🏆 COPA 2026</div>
       </footer>
     </div>`;
   }
@@ -1055,9 +956,7 @@
       }))
       .filter(item => isCompletePlayerName(item.name) && team(item.team));
     if (!clean.length) return 0;
-    scorerSeed = normalizeScorers(clean);
-    scorerBaselineGoalEvents = normalizeGoalEvents(state.goalEvents || {});
-    state.scorers = normalizeScorers(scorerSeed);
+    state.scorers = normalizeScorers(clean);
     return clean.length;
   }
 
@@ -1140,6 +1039,7 @@
 
   function applyRemoteUpdate(payload) {
     const matches = Array.isArray(payload?.matches) ? payload.matches : [];
+    const scorerCount = applyOfficialScorerSnapshot(payload?.scorers);
     let changed = 0;
     let matched = 0;
 
@@ -1153,8 +1053,6 @@
       });
 
     applyManualMatchEventOverrides();
-    const scorerCount = applyOfficialScorerSnapshot(payload?.scorers);
-    if (!scorerCount) refreshScorersFromGoalEvents();
     if (!matched && !scorerCount) throw new Error("A fonte não retornou informações utilizáveis.");
     saveState();
     renderAll();
@@ -1168,27 +1066,17 @@
     if (status) status.innerHTML = `<span class="update-status__spinner"></span> Conferindo placares, gols e artilharia...`;
     try {
       if (location.protocol === "file:") throw new Error("Abra a versão publicada no Netlify para atualizar automaticamente.");
-
-      let payload;
-      let fallbackUsed = false;
-      try {
-        const response = await fetch(LIVE_UPDATE_ENDPOINT, {cache:"no-store", headers:{"Accept":"application/json"}});
-        payload = await response.json().catch(() => ({}));
-        if (!response.ok || payload?.ok === false) throw new Error(payload?.error || `Servidor de atualização: ${response.status}`);
-      } catch (error) {
-        console.warn("Falha no endpoint do Netlify. Tentando fonte comunitária direta.", error);
-        payload = await fetchCommunityDataDirect();
-        fallbackUsed = true;
-      }
-
+      const response = await fetch(LIVE_UPDATE_ENDPOINT, {cache:"no-store", headers:{"Accept":"application/json"}});
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok || payload?.ok === false) throw new Error(payload?.error || `Servidor de atualização: ${response.status}`);
       const result = applyRemoteUpdate(payload);
       const time = new Intl.DateTimeFormat("pt-BR", {hour:"2-digit", minute:"2-digit"}).format(new Date());
       const detail = [
         `${result.changed} placar(es) alterado(s)`,
         `${result.matched} partida(s) conferida(s)`,
-        result.scorers ? `${result.scorers} artilheiro(s) validados` : "artilharia recalculada automaticamente"
+        result.scorers ? `${result.scorers} artilheiro(s) validados` : "artilharia preservada"
       ].join(" • ");
-      if (status) status.innerHTML = `<strong>Atualizado às ${time}</strong> • ${detail} • fonte: ${escapeHtml(payload.provider || "dados verificados")}${payload.degraded ? " • modo de segurança" : ""}${fallbackUsed ? " • fallback direto" : ""}`;
+      if (status) status.innerHTML = `<strong>Atualizado às ${time}</strong> • ${detail} • fonte: ${escapeHtml(payload.provider || "dados verificados")}${payload.degraded ? " • modo de segurança" : ""}`;
     } catch (error) {
       console.error(error);
       if (status) status.innerHTML = `<strong>Não foi possível consultar a fonte agora.</strong> Os dados confiáveis já salvos foram preservados. <span>${escapeHtml(error.message)}</span>`;
@@ -1237,25 +1125,17 @@
     });
     document.getElementById("goalPlayer").value = "";
     document.getElementById("goalMinute").value = "";
-    refreshScorersFromGoalEvents();
     saveState();
     renderGoalDialog();
     renderBracket();
-    renderTopScorers();
-    renderScorerCarousel();
-    renderContenderCarousel();
   }
 
   function removeGoalEvent(eventId) {
     if (!currentGoalMatchId || !state.goalEvents[currentGoalMatchId]) return;
     state.goalEvents[currentGoalMatchId] = state.goalEvents[currentGoalMatchId].filter(event => event.id !== eventId);
-    refreshScorersFromGoalEvents();
     saveState();
     renderGoalDialog();
     renderBracket();
-    renderTopScorers();
-    renderScorerCarousel();
-    renderContenderCarousel();
   }
 
   function allMatches() {
@@ -1405,7 +1285,7 @@
           const selection = team(item.team);
           const image = scorerImageFor(item);
           const imageMarkup = image
-            ? `<div class="scorer-carousel__image-shell"><div class="scorer-carousel__backdrop" style="background-image:url('${image}')"></div><img class="scorer-carousel__photo" src="${image}" alt="${escapeHtml(item.name)}" loading="${index < 2 ? "eager" : "lazy"}" /></div>`
+            ? `<img src="${image}" alt="${escapeHtml(item.name)}" loading="${index < 2 ? "eager" : "lazy"}" />`
             : `<div class="scorer-carousel__placeholder"><span>${selection?.flag || "⚽"}</span><strong>${escapeHtml(item.name)}</strong></div>`;
           return `<article class="scorer-carousel__slide ${index === scorerCarouselIndex ? "is-active" : ""}" data-carousel-slide="${index}" aria-hidden="${index === scorerCarouselIndex ? "false" : "true"}">
             <div class="scorer-carousel__frame">
@@ -1460,13 +1340,13 @@
     if (!container) return;
     const players = contenderCarouselScorers();
     if (!players.length) {
-      container.innerHTML = `<div class="scorer-carousel__heading"><div><p class="eyebrow">NA BRIGA</p><h4>Outros artilheiros</h4></div></div><div class="empty-state">Nenhum outro jogador ativo com três gols neste momento.</div>`;
+      container.innerHTML = `<div class="scorer-carousel__heading"><div><p class="eyebrow">NA BRIGA</p><h4>Outros artilheiros ativos</h4></div></div><div class="empty-state">Nenhum outro jogador ativo com três gols neste momento.</div>`;
       return;
     }
     contenderCarouselIndex = ((contenderCarouselIndex % players.length) + players.length) % players.length;
     container.innerHTML = `
       <div class="scorer-carousel__heading">
-        <div><p class="eyebrow">POSIÇÕES 11 A 15</p><h4>Outros artilheiros</h4></div>
+        <div><p class="eyebrow">NA BRIGA PELO TOP 10</p><h4>Outros artilheiros ativos</h4></div>
         <span>${players.length} jogadores</span>
       </div>
       <div class="scorer-carousel__viewport">
@@ -1477,7 +1357,7 @@
           return `<article class="scorer-carousel__slide ${index === contenderCarouselIndex ? "is-active" : ""}" data-contender-slide="${index}" aria-hidden="${index === contenderCarouselIndex ? "false" : "true"}">
             <div class="scorer-carousel__frame">
               <div class="scorer-carousel__rank">#${ranking}</div>
-              <div class="scorer-carousel__image-shell"><div class="scorer-carousel__backdrop" style="background-image:url('${image}')"></div><img class="scorer-carousel__photo" src="${image}" alt="${escapeHtml(item.name)}" loading="${index < 2 ? "eager" : "lazy"}" /></div>
+              <img src="${image}" alt="${escapeHtml(item.name)}" loading="${index < 2 ? "eager" : "lazy"}" />
               <div class="scorer-carousel__overlay">
                 <div class="scorer-carousel__team"><span>${selection?.flag || "⚽"}</span>${escapeHtml(selection?.name || item.team)}</div>
                 <h5>${escapeHtml(item.name)}</h5>
@@ -1612,7 +1492,6 @@
   }
 
   function renderAll() {
-    refreshScorersFromGoalEvents();
     propagateBracket();
     renderDashboard();
     renderGroups();
@@ -1721,25 +1600,12 @@
     const viewport = document.getElementById("bracket");
     let pinchStartDistance = null;
     let pinchStartZoom = bracketZoom;
-    let singleTouchY = null;
     viewport.addEventListener("wheel", event => {
-      if (event.ctrlKey || event.metaKey) {
-        event.preventDefault();
-        setBracketZoom(bracketZoom + (event.deltaY < 0 ? 0.1 : -0.1));
-        return;
-      }
-      const atTop = viewport.scrollTop <= 1;
-      const atBottom = viewport.scrollTop + viewport.clientHeight >= viewport.scrollHeight - 1;
-      if ((event.deltaY < 0 && atTop) || (event.deltaY > 0 && atBottom)) {
-        event.preventDefault();
-        window.scrollBy({ top: event.deltaY, behavior: "auto" });
-      }
+      if (!event.ctrlKey && !event.metaKey) return;
+      event.preventDefault();
+      setBracketZoom(bracketZoom + (event.deltaY < 0 ? 0.05 : -0.05));
     }, { passive: false });
     viewport.addEventListener("touchstart", event => {
-      if (event.touches.length === 1) {
-        singleTouchY = event.touches[0].clientY;
-        return;
-      }
       if (event.touches.length !== 2) return;
       pinchStartDistance = Math.hypot(
         event.touches[0].clientX - event.touches[1].clientX,
@@ -1748,30 +1614,15 @@
       pinchStartZoom = bracketZoom;
     }, { passive: true });
     viewport.addEventListener("touchmove", event => {
-      if (event.touches.length === 2 && pinchStartDistance) {
-        event.preventDefault();
-        const distance = Math.hypot(
-          event.touches[0].clientX - event.touches[1].clientX,
-          event.touches[0].clientY - event.touches[1].clientY
-        );
-        setBracketZoom(pinchStartZoom * (distance / pinchStartDistance));
-        return;
-      }
-      if (event.touches.length === 1 && singleTouchY !== null) {
-        const currentY = event.touches[0].clientY;
-        const movement = singleTouchY - currentY;
-        const atTop = viewport.scrollTop <= 1;
-        const atBottom = viewport.scrollTop + viewport.clientHeight >= viewport.scrollHeight - 1;
-        if ((movement < 0 && atTop) || (movement > 0 && atBottom)) {
-          window.scrollBy({ top: movement, behavior: "auto" });
-        }
-        singleTouchY = currentY;
-      }
+      if (event.touches.length !== 2 || !pinchStartDistance) return;
+      event.preventDefault();
+      const distance = Math.hypot(
+        event.touches[0].clientX - event.touches[1].clientX,
+        event.touches[0].clientY - event.touches[1].clientY
+      );
+      setBracketZoom(pinchStartZoom * (distance / pinchStartDistance));
     }, { passive: false });
-    viewport.addEventListener("touchend", () => {
-      pinchStartDistance = null;
-      singleTouchY = null;
-    }, { passive: true });
+    viewport.addEventListener("touchend", () => { pinchStartDistance = null; }, { passive: true });
   }
 
   function handleScoreInput(event) {
@@ -1811,8 +1662,6 @@
       groupMatches: state.groupMatches,
       knockoutMatches: state.knockoutMatches,
       scorers: state.scorers,
-      scorerSeed,
-      scorerBaselineGoalEvents,
       goalEvents: state.goalEvents
     };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type:"application/json" });
@@ -1834,15 +1683,8 @@
         throw new Error("O backup contém confrontos incompatíveis com esta versão do calendário.");
       }
       restoreMatchesFromSaved(imported);
-      scorerSeed = Array.isArray(imported.scorerSeed)
-        ? normalizeScorers(imported.scorerSeed)
-        : Array.isArray(imported.scorers)
-          ? normalizeScorers(imported.scorers)
-          : normalizeScorers(baseData.topScorers || []);
-      scorerBaselineGoalEvents = normalizeGoalEvents(imported.scorerBaselineGoalEvents || baseData.goalEvents || {});
+      state.scorers = Array.isArray(imported.scorers) ? normalizeScorers(imported.scorers) : normalizeScorers(baseData.topScorers || []);
       state.goalEvents = imported.goalEvents && typeof imported.goalEvents === "object" ? normalizeGoalEvents(imported.goalEvents) : normalizeGoalEvents(baseData.goalEvents || {});
-      applyManualMatchEventOverrides();
-      refreshScorersFromGoalEvents();
       propagateBracket();
       saveState();
       renderAll();
@@ -1879,8 +1721,8 @@
     document.addEventListener("click", handleScorerCarouselClick);
     document.addEventListener("click", handleContenderCarouselClick);
     document.getElementById("addGoalEventBtn").addEventListener("click", addGoalEvent);
-    document.getElementById("zoomOutBtn").addEventListener("click", () => setBracketZoom(bracketZoom - 0.1));
-    document.getElementById("zoomInBtn").addEventListener("click", () => setBracketZoom(bracketZoom + 0.1));
+    document.getElementById("zoomOutBtn").addEventListener("click", () => setBracketZoom(bracketZoom - 0.05));
+    document.getElementById("zoomInBtn").addEventListener("click", () => setBracketZoom(bracketZoom + 0.05));
     document.getElementById("zoomResetBtn").addEventListener("click", () => setBracketZoom(1));
     document.getElementById("zoomFitBtn").addEventListener("click", () => { fitBracketZoom(); centerBracketViewport("smooth"); });
     document.getElementById("printA4Btn").addEventListener("click", () => printBracketPoster("A4"));

@@ -1449,38 +1449,15 @@ footer { grid-template-columns: 1fr 1fr minmax(280px,.8fr); align-items: start; 
   border: 34px solid rgba(27,125,255,.42);
   border-radius: 50%;
 }
-.scorer-carousel__image-shell {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-}
-.scorer-carousel__backdrop {
-  position: absolute;
-  inset: -7%;
-  background-position: center;
-  background-size: cover;
-  background-repeat: no-repeat;
-  filter: blur(22px) saturate(1.08);
-  transform: scale(1.08);
-}
-.scorer-carousel__image-shell::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(2,10,16,.18) 0%, rgba(2,10,16,.08) 30%, rgba(2,10,16,.24) 100%);
-}
-.scorer-carousel__photo {
-  position: relative;
-  z-index: 2;
+.scorer-carousel__frame > img {
   width: 100%;
   height: 100%;
-  padding: clamp(20px, 2.2vw, 28px);
-  object-fit: contain;
-  object-position: center center;
+  object-fit: cover;
+  object-position: center;
   transition: transform 5.6s ease;
 }
-.scorer-carousel__slide.is-active .scorer-carousel__photo {
-  transform: scale(1.02);
+.scorer-carousel__slide.is-active .scorer-carousel__frame > img {
+  transform: scale(1.035);
 }
 .scorer-carousel__rank {
   position: absolute;
@@ -1639,7 +1616,6 @@ footer { grid-template-columns: 1fr 1fr minmax(280px,.8fr); align-items: start; 
   }
   .scorer-carousel__goals strong { font-size: 1.8rem; }
   .scorer-carousel__nav { width: 40px; height: 50px; }
-  .scorer-carousel__photo { padding: 18px; }
 }
 
 /* Ajuste fino do zoom v5 */
@@ -1971,7 +1947,7 @@ footer { grid-template-columns: 1fr 1fr minmax(280px,.8fr); align-items: start; 
   font-size: .92rem;
 }
 .scorer-carousel--mini .scorer-carousel__nav { width: 38px; height: 48px; }
-.scorer-carousel--mini .scorer-carousel__photo { padding: clamp(16px, 2vw, 24px); }
+.scorer-carousel--mini .scorer-carousel__frame > img { object-position: center top; }
 .goal-tooltip small + small {
   display: block;
   margin-top: 5px;
@@ -1989,267 +1965,4 @@ footer { grid-template-columns: 1fr 1fr minmax(280px,.8fr); align-items: start; 
   .scorer-showcase-grid { gap: 12px; }
   .scorer-carousel--mini .scorer-carousel__viewport { height: min(68vh, 540px); }
   .scorer-carousel--mini .scorer-carousel__overlay h5 { font-size: 1.55rem; }
-}
-
-
-/* v6.7 — cards responsivos, zoom móvel ampliado e pôster premium */
-.scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__viewport {
-  width: 100%;
-  height: auto !important;
-  aspect-ratio: 1 / 1;
-  min-height: 0;
-}
-.scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__backdrop {
-  inset: -9%;
-  filter: blur(24px) saturate(1.14) brightness(.78);
-  transform: scale(1.13);
-}
-.scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__photo {
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  object-fit: contain;
-  object-position: center center;
-}
-.scorer-carousel--mini .scorer-carousel__viewport {
-  width: 100%;
-  height: auto !important;
-  aspect-ratio: 4 / 5;
-  min-height: 0;
-}
-.scorer-carousel--mini .scorer-carousel__backdrop { display: none; }
-.scorer-carousel--mini .scorer-carousel__image-shell { background: #07131c; }
-.scorer-carousel--mini .scorer-carousel__photo {
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  object-fit: cover;
-  object-position: center center;
-}
-.scorer-carousel--mini .scorer-carousel__image-shell::after {
-  background: linear-gradient(180deg, transparent 45%, rgba(1,8,13,.25) 64%, rgba(1,8,13,.92) 100%);
-}
-.scorer-carousel__frame,
-.scorer-carousel__image-shell,
-.scorer-carousel__photo { border-radius: inherit; }
-
-.bracket-scroll {
-  overscroll-behavior-x: contain;
-  overscroll-behavior-y: auto !important;
-}
-@media (max-width: 760px) {
-  .bracket-scroll {
-    height: 82vh;
-    max-height: 82vh;
-    min-height: 600px;
-  }
-  #bracketZoomRange { width: min(250px, 58vw); }
-  .scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__viewport,
-  .scorer-carousel--mini .scorer-carousel__viewport { height: auto !important; }
-}
-
-@media print {
-  .poster-shell {
-    position: relative;
-    display: grid !important;
-    grid-template-rows: auto minmax(0,1fr) auto !important;
-    width: 100% !important;
-    height: 100% !important;
-    min-height: 0 !important;
-    padding: 3.2mm !important;
-    overflow: hidden !important;
-    border: 1.4mm solid transparent !important;
-    border-radius: 5mm !important;
-    background:
-      linear-gradient(#06131d,#06131d) padding-box,
-      linear-gradient(120deg,#6d22f4,#e90022,#a8ee00,#10c969,#1b7dff) border-box !important;
-    box-shadow: inset 0 0 0 .5mm rgba(255,255,255,.16) !important;
-  }
-  .poster-shell::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    opacity: .22;
-    background: url("assets/copa-groups-background.png") center/cover no-repeat !important;
-  }
-  .poster-shell > * { position: relative; z-index: 1; }
-  .poster-header--premium {
-    display: grid !important;
-    grid-template-columns: 27mm 1fr 27mm !important;
-    align-items: center !important;
-    gap: 4mm !important;
-    margin: 0 0 2.6mm !important;
-    padding: 2.4mm 4mm !important;
-    border: .5mm solid rgba(255,255,255,.4) !important;
-    border-radius: 4mm !important;
-    background: linear-gradient(115deg,#6818ec 0 24%,#e90018 24% 59%,#a8ec00 59% 78%,#0cc767 78%) !important;
-  }
-  .poster-header__logo img,
-  .poster-header__ball img {
-    width: 25mm !important;
-    height: 20mm !important;
-    object-fit: contain !important;
-    filter: drop-shadow(0 1mm 1.5mm rgba(0,0,0,.35));
-  }
-  .poster-header__copy { text-align: center; text-shadow: 0 1mm 2mm rgba(0,0,0,.4); }
-  .poster-header__copy p { margin: 0; font-size: 3mm; font-weight: 950; letter-spacing: 1.3mm; }
-  .poster-header__copy h1 { margin: .5mm 0; font: 950 7mm/1 Impact,"Arial Narrow",sans-serif; letter-spacing: .5mm; }
-  .poster-header__copy span { font-size: 2.1mm; font-weight: 800; }
-
-  .poster-bracket-grid {
-    min-height: 0;
-    display: grid;
-    grid-template-columns: minmax(0,1fr) 39mm minmax(0,1fr);
-    gap: 2mm;
-    align-items: stretch;
-  }
-  .poster-bracket-side {
-    min-width: 0;
-    display: grid;
-    grid-template-columns: repeat(4,minmax(0,1fr));
-    gap: 1.1mm;
-    align-items: stretch;
-  }
-  .poster-round-column {
-    position: relative;
-    min-width: 0;
-    display: grid;
-    grid-template-rows: auto 1fr;
-    padding: .7mm;
-    border: .3mm solid color-mix(in srgb,var(--poster-accent),white 22%);
-    border-radius: 2.4mm;
-    background: rgba(4,20,30,.92) !important;
-  }
-  .poster-round-column h3 {
-    margin: 0 0 .7mm;
-    padding: 1mm .4mm;
-    border-radius: 1.5mm;
-    color: #fff;
-    background: var(--poster-accent) !important;
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: .35mm;
-    font-size: 1.75mm;
-  }
-  .poster-round-column > div {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-around;
-    gap: .65mm;
-    min-height: 0;
-  }
-  .poster-round-column .poster-match {
-    position: relative;
-    border: .25mm solid rgba(255,255,255,.2);
-    border-radius: 1.35mm;
-    background: rgba(5,27,39,.98) !important;
-  }
-  .poster-bracket-side--left .poster-round-column:not(:last-child) .poster-match::after,
-  .poster-bracket-side--right .poster-round-column:not(:first-child) .poster-match::before {
-    content: "";
-    position: absolute;
-    top: 50%;
-    width: 1.3mm;
-    height: .3mm;
-    background: rgba(244,211,93,.7) !important;
-  }
-  .poster-bracket-side--left .poster-round-column:not(:last-child) .poster-match::after { right: -1.45mm; }
-  .poster-bracket-side--right .poster-round-column:not(:first-child) .poster-match::before { left: -1.45mm; }
-  .poster-match__meta {
-    padding: .55mm .8mm !important;
-    font-size: 1.2mm !important;
-    background: rgba(255,255,255,.09) !important;
-  }
-  .poster-team {
-    grid-template-columns: 3.5mm minmax(0,1fr) 5mm !important;
-    min-height: 3.8mm !important;
-    gap: .5mm !important;
-    padding: .35mm .65mm !important;
-    font-size: 1.38mm !important;
-  }
-  .poster-team span { font-size: 2mm !important; }
-  .poster-team b { min-height: 3mm !important; font-size: 1.4mm !important; }
-
-  .poster-champion-center {
-    display: grid;
-    grid-template-rows: auto 17mm auto auto auto 1fr;
-    align-content: start;
-    gap: 1.2mm;
-    padding: 2mm;
-    border: .55mm solid rgba(244,211,93,.65);
-    border-radius: 4mm;
-    background:
-      radial-gradient(circle at 50% 20%,rgba(244,211,93,.26),transparent 37%),
-      linear-gradient(160deg,rgba(58,25,123,.97),rgba(5,55,48,.97)) !important;
-    text-align: center;
-  }
-  .poster-center-kicker { color: #ffe16b; font-size: 1.7mm; font-weight: 950; letter-spacing: .8mm; }
-  .poster-center-logo { justify-self: center; width: 18mm; height: 17mm; object-fit: contain; }
-  .poster-champion-center h2 { margin: 0; font-size: 3.1mm; }
-  .poster-champion-center .poster-match { border-color: rgba(255,255,255,.35); }
-  .poster-champion-card {
-    display: grid;
-    gap: .7mm;
-    padding: 2mm 1mm;
-    border: .4mm solid rgba(244,211,93,.6);
-    border-radius: 2.5mm;
-    background: rgba(5,18,22,.72) !important;
-  }
-  .poster-champion-card small { color: #ffe16b; font-size: 1.5mm; font-weight: 950; letter-spacing: .7mm; }
-  .poster-champion-card strong { font-size: 3.1mm; }
-  .poster-champion-card span { color: #d5e8ef; font-size: 1.45mm; }
-  .poster-center-mascots { align-self: end; justify-self: center; width: 33mm; max-height: 24mm; object-fit: contain; border-radius: 2mm; }
-
-  .poster-brazil-footer {
-    display: grid;
-    grid-template-columns: 48mm 1fr 32mm;
-    align-items: center;
-    gap: 4mm;
-    margin-top: 2.6mm;
-    padding: 2mm 3mm;
-    border: .5mm solid rgba(244,211,93,.58);
-    border-radius: 4mm;
-    background: linear-gradient(100deg,rgba(0,109,68,.96),rgba(10,74,51,.96) 45%,rgba(16,50,102,.96)) !important;
-  }
-  .poster-brazil-photo {
-    height: 19mm;
-    overflow: hidden;
-    border: .35mm solid rgba(255,255,255,.65);
-    border-radius: 2.5mm;
-  }
-  .poster-brazil-photo img { width: 100%; height: 100%; object-fit: cover; object-position: center 44%; }
-  .poster-brazil-copy { display: grid; gap: .4mm; text-align: center; }
-  .poster-brazil-copy small { color: #ffe16b; font-size: 1.6mm; font-weight: 950; letter-spacing: .65mm; }
-  .poster-brazil-copy strong {
-    color: #fff;
-    font-family: "Brush Script MT","Segoe Script",cursive;
-    font-size: 6.5mm;
-    font-weight: 700;
-    line-height: 1;
-    text-shadow: 0 .8mm 1.5mm rgba(0,0,0,.45);
-  }
-  .poster-brazil-copy span { color: #d7e8ee; font-size: 1.4mm; }
-  .poster-brazil-brand { width: 31mm; height: 19mm; object-fit: cover; border-radius: 2.5mm; }
-
-  body[data-print-format="a4"] .poster-shell { padding: 2mm !important; }
-  body[data-print-format="a4"] .poster-header--premium { grid-template-columns: 20mm 1fr 20mm !important; padding: 1.4mm 3mm !important; }
-  body[data-print-format="a4"] .poster-header__logo img,
-  body[data-print-format="a4"] .poster-header__ball img { width: 19mm !important; height: 15mm !important; }
-  body[data-print-format="a4"] .poster-header__copy h1 { font-size: 5.2mm; }
-  body[data-print-format="a4"] .poster-bracket-grid { grid-template-columns: minmax(0,1fr) 31mm minmax(0,1fr); gap: 1.2mm; }
-  body[data-print-format="a4"] .poster-bracket-side { gap: .6mm; }
-  body[data-print-format="a4"] .poster-round-column { padding: .4mm; }
-  body[data-print-format="a4"] .poster-round-column h3 { padding: .6mm .2mm; font-size: 1.25mm; }
-  body[data-print-format="a4"] .poster-match__meta { font-size: .85mm !important; }
-  body[data-print-format="a4"] .poster-team { min-height: 2.7mm !important; font-size: 1mm !important; grid-template-columns: 2.8mm minmax(0,1fr) 4mm !important; }
-  body[data-print-format="a4"] .poster-team span { font-size: 1.5mm !important; }
-  body[data-print-format="a4"] .poster-team b { min-height: 2.2mm !important; font-size: 1mm !important; }
-  body[data-print-format="a4"] .poster-champion-center { grid-template-rows: auto 13mm auto auto auto 1fr; padding: 1mm; }
-  body[data-print-format="a4"] .poster-center-logo { width: 14mm; height: 13mm; }
-  body[data-print-format="a4"] .poster-center-mascots { width: 25mm; max-height: 18mm; }
-  body[data-print-format="a4"] .poster-brazil-footer { grid-template-columns: 38mm 1fr 25mm; padding: 1.2mm 2mm; margin-top: 1.4mm; }
-  body[data-print-format="a4"] .poster-brazil-photo { height: 13mm; }
-  body[data-print-format="a4"] .poster-brazil-copy strong { font-size: 4.8mm; }
-  body[data-print-format="a4"] .poster-brazil-brand { width: 24mm; height: 13mm; }
 }

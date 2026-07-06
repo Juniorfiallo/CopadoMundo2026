@@ -2,31 +2,33 @@ const ESPN_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/socce
 const ESPN_SUMMARY_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/summary?event=";
 const COMMUNITY_GAMES_URL = "https://worldcup26.ir/get/games";
 const COMMUNITY_TEAMS_URL = "https://worldcup26.ir/get/teams";
+const FIFA_SCORERS_URL = "https://www.fifa.com/pt/tournaments/mens/worldcup/canadamexicousa2026/statistics/player-statistics?group=gcp_top_scorer";
 const GE_SCORERS_URL = "https://ge.globo.com/futebol/copa-do-mundo/noticia/2026/06/12/copa-do-mundo-2026-veja-ranking-de-artilheiros-e-garcons.ghtml";
 
 const OFFICIAL_SCORERS = Object.freeze([
-  {name:"Kylian Mbappé",team:"FRA",goals:7,image:"assets/scorer-kylian-mbappe.jpg"},
-  {name:"Lionel Messi",team:"ARG",goals:7,image:"assets/scorer-lionel-messi.jpg"},
-  {name:"Erling Haaland",team:"NOR",goals:5,image:"assets/scorer-erling-haaland.jpg"},
-  {name:"Harry Kane",team:"ENG",goals:5,image:"assets/scorer-harry-kane.jpg"},
-  {name:"Ismaïla Sarr",team:"SEN",goals:4,image:"assets/scorer-ismaila-sarr.jpg"},
-  {name:"Mikel Oyarzabal",team:"ESP",goals:4,image:"assets/scorer-mikel-oyarzabal.jpg"},
-  {name:"Ousmane Dembélé",team:"FRA",goals:4,image:"assets/scorer-ousmane-dembele.jpg"},
-  {name:"Vinícius Júnior",team:"BRA",goals:4,image:"assets/scorer-vinicius-junior.jpg"},
-  {name:"Brian Brobbey",team:"NED",goals:3,image:"https://sassets.knvb.nl/sites/onsoranje.nl/files/players/ac1404b1a1ac6bcfd2b3b71febcf03d8.png"},
-  {name:"Cody Gakpo",team:"NED",goals:3,image:"https://cdn-img.staticzz.com/img/planteis/new/41/21/11084121_cody_gakpo_20240608073739.jpg"},
-  {name:"Cristiano Ronaldo",team:"POR",goals:3,image:"assets/scorer-cristiano-ronaldo.jpg"},
-  {name:"Deniz Undav",team:"GER",goals:3,image:"assets/scorer-deniz-undav.jpg"},
-  {name:"Elijah Just",team:"NZL",goals:3},
-  {name:"Folarin Balogun",team:"USA",goals:3,image:"assets/scorer-folarin-balogun.jpg"},
-  {name:"Ismael Saibari",team:"MAR",goals:3,image:"assets/scorer-ismael-saibari.jpg"},
-  {name:"Johan Manzambi",team:"SUI",goals:3,image:"assets/scorer-johan-manzambi.jpg"},
-  {name:"Jonathan David",team:"CAN",goals:3,image:"assets/scorer-jonathan-david.jpg"},
-  {name:"Julián Quiñones",team:"MEX",goals:3,image:"assets/scorer-julian-quinones.jpg"},
-  {name:"Kai Havertz",team:"GER",goals:3},
-  {name:"Matheus Cunha",team:"BRA",goals:3,image:"assets/scorer-matheus-cunha.jpg"},
-  {name:"Yoane Wissa",team:"COD",goals:3}
+  {name:"Kylian Mbappé",team:"FRA",goals:7,assists:2,image:"assets/scorer-kylian-mbappe.jpg"},
+  {name:"Lionel Messi",team:"ARG",goals:7,assists:3,image:"assets/scorer-lionel-messi.jpg"},
+  {name:"Erling Haaland",team:"NOR",goals:7,assists:1,image:"assets/scorer-erling-haaland.jpg"},
+  {name:"Harry Kane",team:"ENG",goals:6,assists:2,image:"assets/scorer-harry-kane.jpg"},
+  {name:"Ismaïla Sarr",team:"SEN",goals:4,assists:1,image:"assets/scorer-ismaila-sarr.jpg"},
+  {name:"Julián Quiñones",team:"MEX",goals:4,assists:1,image:"assets/scorer-julian-quinones.jpg"},
+  {name:"Mikel Oyarzabal",team:"ESP",goals:4,assists:1,image:"assets/scorer-mikel-oyarzabal.jpg"},
+  {name:"Ousmane Dembélé",team:"FRA",goals:4,assists:2,image:"assets/scorer-ousmane-dembele.jpg"},
+  {name:"Vinícius Júnior",team:"BRA",goals:4,assists:1,image:"assets/scorer-vinicius-junior.jpg"},
+  {name:"Brian Brobbey",team:"NED",goals:3,assists:0,image:"https://sassets.knvb.nl/sites/onsoranje.nl/files/players/ac1404b1a1ac6bcfd2b3b71febcf03d8.png"},
+  {name:"Cody Gakpo",team:"NED",goals:3,assists:1,image:"https://cdn-img.staticzz.com/img/planteis/new/41/21/11084121_cody_gakpo_20240608073739.jpg"},
+  {name:"Cristiano Ronaldo",team:"POR",goals:3,assists:1,image:"assets/scorer-cristiano-ronaldo.jpg"},
+  {name:"Deniz Undav",team:"GER",goals:3,assists:0,image:"assets/scorer-deniz-undav.jpg"},
+  {name:"Folarin Balogun",team:"USA",goals:3,assists:1,image:"assets/scorer-folarin-balogun.jpg"},
+  {name:"Ismael Saibari",team:"MAR",goals:3,assists:1,image:"assets/scorer-ismael-saibari.jpg"},
+  {name:"Johan Manzambi",team:"SUI",goals:3,assists:0,image:"assets/scorer-johan-manzambi.jpg"},
+  {name:"Jonathan David",team:"CAN",goals:3,assists:1,image:"assets/scorer-jonathan-david.jpg"},
+  {name:"Matheus Cunha",team:"BRA",goals:3,assists:0,image:"assets/scorer-matheus-cunha.jpg"},
+  {name:"Elijah Just",team:"NZL",goals:3,assists:0},
+  {name:"Kai Havertz",team:"GER",goals:3,assists:1},
+  {name:"Yoane Wissa",team:"COD",goals:3,assists:1}
 ]);
+
 
 const TEAM_CODE_ALIASES = Object.freeze({
   "NETHERLANDS":"NED", "HOL":"NED", "HOLANDA":"NED", "PAÍSES BAIXOS":"NED", "PAISES BAIXOS":"NED",
@@ -71,7 +73,7 @@ function jsonResponse(body, statusCode = 200) {
 
 async function fetchJson(url, timeout = 18000) {
   const response = await fetch(url, {
-    headers: {Accept:"application/json", "User-Agent":"Copa-2026-Painel-Premium/7.0"},
+    headers: {Accept:"application/json", "User-Agent":"Copa-2026-Painel-Premium/7.1"},
     cache: "no-store",
     signal: AbortSignal.timeout(timeout)
   });
@@ -84,7 +86,7 @@ async function fetchText(url, timeout = 18000) {
     headers: {
       Accept:"text/html,application/xhtml+xml",
       "Accept-Language":"pt-BR,pt;q=0.9,en;q=0.7",
-      "User-Agent":"Mozilla/5.0 (compatible; Copa-2026-Painel-Premium/7.0)"
+      "User-Agent":"Mozilla/5.0 (compatible; Copa-2026-Painel-Premium/7.1)"
     },
     cache:"no-store",
     signal:AbortSignal.timeout(timeout)
@@ -148,6 +150,73 @@ function parseGeScorers(html) {
 async function fetchGeScorers() {
   const html = await fetchText(GE_SCORERS_URL, 18000);
   return parseGeScorers(html);
+}
+
+function maybePushScorer(rows, item) {
+  const name = canonicalScorerName(item?.name);
+  const team = cleanCode(item?.team);
+  const goals = numberValue(item?.goals);
+  const assists = numberValue(item?.assists);
+  if (!name || !team || !Number.isFinite(goals)) return;
+  rows.push({
+    name,
+    team,
+    goals,
+    ...(Number.isFinite(assists) ? { assists } : {}),
+    ...(item?.image ? { image:item.image } : (SCORER_IMAGE_MAP[name] ? { image:SCORER_IMAGE_MAP[name] } : {}))
+  });
+}
+
+function collectScorersFromObject(node, rows = []) {
+  if (!node || typeof node !== "object") return rows;
+  if (Array.isArray(node)) {
+    node.forEach(item => collectScorersFromObject(item, rows));
+    return rows;
+  }
+
+  const candidateName = node.playerName || node.player_name || node.player?.name || node.player?.fullName || node.participantName || node.participant?.name || node.name;
+  const candidateTeam = node.teamCode || node.team_code || node.team?.fifaCode || node.team?.code || node.team?.abbreviation || node.countryCode || node.country_code || node.teamName || node.team?.name;
+  const candidateGoals = node.goals ?? node.goal ?? node.statValue ?? node.value ?? node.totalGoals ?? node.goalsScored;
+  const candidateAssists = node.assists ?? node.assist ?? node.secondaryValue ?? node.totalAssists ?? node.assistCount;
+  const candidateImage = node.image?.src || node.image?.url || node.playerImage || node.photo || node.photoUrl || null;
+
+  if (candidateName && candidateTeam && candidateGoals !== undefined && candidateGoals !== null) {
+    maybePushScorer(rows, { name:candidateName, team:candidateTeam, goals:candidateGoals, assists:candidateAssists, image:candidateImage });
+  }
+
+  Object.values(node).forEach(value => collectScorersFromObject(value, rows));
+  return rows;
+}
+
+function parseFifaScorers(html) {
+  const rows = [];
+  const scriptRegex = /<script[^>]*>([\s\S]*?)<\/script>/gi;
+  let match;
+  while ((match = scriptRegex.exec(String(html || ""))) !== null) {
+    const raw = decodeEntities(match[1])
+      .replace(/\u002F/g, "/")
+      .replace(/&quot;/g, '"');
+    const chunks = [];
+    if (raw.trim().startsWith("{") || raw.trim().startsWith("[")) chunks.push(raw.trim());
+    const nextData = [...raw.matchAll(/(?:__NEXT_DATA__\s*=\s*|window\.__INITIAL_STATE__\s*=\s*)(\{[\s\S]*?\})\s*;?/g)].map(item => item[1]);
+    chunks.push(...nextData);
+    chunks.forEach(chunk => {
+      try {
+        const parsed = JSON.parse(chunk);
+        collectScorersFromObject(parsed, rows);
+      } catch (_) { /* ignore malformed blobs */ }
+    });
+  }
+  const unique = new Map();
+  rows.forEach(item => unique.set(`${normalizeKey(item.name)}|${item.team}`, item));
+  const result = [...unique.values()].sort((a,b) => b.goals - a.goals || (b.assists ?? -1) - (a.assists ?? -1) || a.name.localeCompare(b.name, "pt-BR"));
+  if (result.length < 10) throw new Error("Não foi possível extrair a artilharia oficial da FIFA.");
+  return result;
+}
+
+async function fetchFifaScorers() {
+  const html = await fetchText(FIFA_SCORERS_URL, 18000);
+  return parseFifaScorers(html);
 }
 
 function cleanCode(value) {
@@ -324,12 +393,17 @@ exports.handler = async () => {
   let scorers = OFFICIAL_SCORERS;
   let scorerProvider = "snapshot local verificado";
 
-  const scorerResult = await Promise.allSettled([fetchGeScorers()]);
+  const scorerResult = await Promise.allSettled([fetchFifaScorers(), fetchGeScorers()]);
   if (scorerResult[0].status === "fulfilled") {
     scorers = scorerResult[0].value;
+    scorerProvider = "FIFA oficial / estatísticas de jogadores";
+  } else if (scorerResult[1].status === "fulfilled") {
+    scorers = scorerResult[1].value;
     scorerProvider = "ge / ranking de artilheiros";
+    failures.push(`FIFA: ${scorerResult[0].reason?.message || "falha desconhecida"}`);
   } else {
-    failures.push(`Artilharia ge: ${scorerResult[0].reason?.message || "falha desconhecida"}`);
+    failures.push(`FIFA: ${scorerResult[0].reason?.message || "falha desconhecida"}`);
+    failures.push(`Artilharia ge: ${scorerResult[1].reason?.message || "falha desconhecida"}`);
   }
 
   try {

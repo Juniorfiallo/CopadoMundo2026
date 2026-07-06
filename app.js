@@ -8,7 +8,7 @@
     : JSON.parse(JSON.stringify(value));
 
   const REMOTE_SCORER_PREFIX = "remote-scorer-";
-  const DATA_VERSION = 7.0;
+  const DATA_VERSION = 7.1;
   const MANUAL_MATCH_EVENT_OVERRIDES = Object.freeze({
     m83: [
       {team:"CRO", player:"Ivan Perišić", minute:"53", type:"goal"},
@@ -126,6 +126,7 @@
         name,
         team: teamCode,
         goals: safeNumber(item?.goals) ?? 0,
+        assists: safeNumber(item?.assists),
         image: item?.image || null
       };
       const current = merged.get(key);
@@ -136,9 +137,11 @@
       if (!fromSeed) {
         current.id = candidate.id;
         current.goals = candidate.goals;
+        current.assists = candidate.assists ?? current.assists ?? null;
         current.image = candidate.image || current.image;
-      } else if (!current.image && candidate.image) {
-        current.image = candidate.image;
+      } else {
+        if (current.assists === null || typeof current.assists === "undefined") current.assists = candidate.assists ?? current.assists ?? null;
+        if (!current.image && candidate.image) current.image = candidate.image;
       }
     };
 
@@ -297,11 +300,38 @@
     return map[variant] || map.default || "50% 18%";
   }
 
+  function stagePriorityValue(stage) {
+    return ({ GROUP:0, R32:1, R16:2, QF:3, SF:4, THIRD:5, FINAL:6 })[stage] ?? 0;
+  }
+
+  function teamTournamentPriority(teamCode) {
+    if (!teamCode) return -1;
+    const active = getActiveTeamCodes();
+    if (active.has(teamCode)) {
+      const pending = state.knockoutMatches
+        .filter(match => !matchIsComplete(match) && (match.home === teamCode || match.away === teamCode))
+        .reduce((best, match) => Math.max(best, stagePriorityValue(match.stage)), 0);
+      return 100 + pending;
+    }
+
+    let best = 0;
+    state.knockoutMatches.forEach(match => {
+      if ((match.home === teamCode || match.away === teamCode) && (matchIsComplete(match) || getWinner(match))) {
+        best = Math.max(best, stagePriorityValue(match.stage));
+      }
+    });
+    return best;
+  }
+
+  function scorerDisplayComparator(a, b) {
+    return (b.goals ?? 0) - (a.goals ?? 0)
+      || teamTournamentPriority(b.team) - teamTournamentPriority(a.team)
+      || (b.assists ?? -1) - (a.assists ?? -1)
+      || String(a.name).localeCompare(String(b.name), "pt-BR");
+  }
+
   function sortedScorers() {
-    return [...state.scorers].sort((a, b) =>
-      (b.goals ?? 0) - (a.goals ?? 0)
-      || String(a.name).localeCompare(String(b.name), "pt-BR")
-    );
+    return [...state.scorers].sort(scorerDisplayComparator);
   }
 
   function mainCarouselScorers() {
@@ -309,8 +339,10 @@
   }
 
   function contenderCarouselScorers() {
-    const ordered = sortedScorers();
-    return ordered.slice(10, 15);
+    const topKeys = new Set(mainCarouselScorers().map(item => scorerKey(item.name, item.team)));
+    return sortedScorers()
+      .filter(item => !topKeys.has(scorerKey(item.name, item.team)) && scorerImageFor(item))
+      .slice(0, 5);
   }
 
   function buildKnockoutGoalScorerMap(goalEventsByMatch) {
@@ -328,6 +360,7 @@
           name: player,
           team: teamCode,
           goals: 0,
+          assists: null,
           image: scorerImageFor({ name: player, team: teamCode })
         };
         current.goals += 1;
@@ -1121,6 +1154,7 @@
         name: canonicalPlayerName(item.name),
         team: String(item.team || "").toUpperCase(),
         goals: safeNumber(item.goals) ?? 0,
+        assists: safeNumber(item.assists),
         image: item.image || scorerImageFor(item)
       }))
       .filter(item => isCompletePlayerName(item.name) && team(item.team));
@@ -1139,6 +1173,7 @@
         return;
       }
       current.goals = Math.max(current.goals || 0, item.goals || 0);
+      current.assists = item.assists ?? current.assists ?? null;
       current.image = current.image || item.image || scorerImageFor(item);
       current.id = item.id || current.id;
     });
@@ -1279,7 +1314,7 @@
         result.scorers ? `${result.scorers} artilheiro(s) validados` : "artilharia recalculada automaticamente"
       ].join(" • ");
       const latestSummary = latestCompletedMatchSummary();
-      if (status) status.innerHTML = `<strong>Atualizado às ${time}</strong> • ${detail} • fonte: ${escapeHtml(payload.provider || "dados verificados")}${payload.degraded ? " • modo de segurança" : ""}${fallbackUsed ? " • fallback direto" : ""}<br><span>${escapeHtml(latestSummary)}</span>`;
+      if (status) status.innerHTML = `<strong>Atualizado às ${time}</strong> • fonte: ${escapeHtml(payload.provider || "dados verificados")}${payload.degraded ? " • modo de segurança" : ""}${fallbackUsed ? " • fallback direto" : ""}<br><span>${escapeHtml(latestSummary)}</span>`;
     } catch (error) {
       console.error(error);
       if (status) status.innerHTML = `<strong>Não foi possível consultar a fonte agora.</strong> Os dados confiáveis já salvos foram preservados. <span>${escapeHtml(error.message)}</span>`;
@@ -1465,11 +1500,13 @@
     const rows = topTen.map((item, index) => {
       const selection = team(item.team);
       const active = activeTeams.has(item.team);
+      const assists = Number.isFinite(item.assists) ? item.assists : null;
       return `<article class="scorer-row ${index === 0 ? "scorer-row--leader" : ""} ${active ? "is-active" : "is-locked"}">
         <div class="scorer-rank">${index + 1}</div>
         <div class="scorer-info">
           <div class="scorer-name"><span class="flag">${selection?.flag || "⚽"}</span><span>${escapeHtml(item.name)}</span></div>
           <div class="scorer-team">${escapeHtml(selection ? selection.name : item.team || "Sem seleção")} • ${active ? "em disputa" : "eliminado / bloqueado"}</div>
+          ${assists !== null ? `<div class="scorer-assists">Assistências: <strong>${assists}</strong></div>` : ""}
         </div>
         <div class="scorer-goals"><span>Gols</span><strong>${item.goals ?? 0}</strong></div>
       </article>`;
@@ -1499,6 +1536,7 @@
           const imageMarkup = image
             ? `<div class="scorer-carousel__image-shell"><div class="scorer-carousel__backdrop" style="background-image:url('${image}');background-position:${position}"></div><img class="scorer-carousel__photo" style="object-position:${position}" src="${image}" alt="${escapeHtml(item.name)}" loading="${index < 2 ? "eager" : "lazy"}" /></div>`
             : `<div class="scorer-carousel__placeholder"><span>${selection?.flag || "⚽"}</span><strong>${escapeHtml(item.name)}</strong></div>`;
+          const assists = Number.isFinite(item.assists) ? item.assists : null;
           return `<article class="scorer-carousel__slide ${index === scorerCarouselIndex ? "is-active" : ""}" data-carousel-slide="${index}" aria-hidden="${index === scorerCarouselIndex ? "false" : "true"}">
             <div class="scorer-carousel__frame">
               <div class="scorer-carousel__rank">#${index + 1}</div>
@@ -1506,6 +1544,7 @@
               <div class="scorer-carousel__overlay">
                 <div class="scorer-carousel__team"><span>${selection?.flag || "⚽"}</span>${escapeHtml(selection?.name || item.team || "Seleção")}</div>
                 <h5>${escapeHtml(item.name)}</h5>
+                ${assists !== null ? `<div class="scorer-carousel__assists"><span>Assist.</span><strong>${assists}</strong></div>` : ""}
                 <div class="scorer-carousel__goals"><strong>${item.goals ?? 0}</strong><span>${(item.goals ?? 0) === 1 ? "gol" : "gols"}</span></div>
               </div>
             </div>
@@ -1551,6 +1590,7 @@
     const container = document.getElementById("contenderCarousel");
     if (!container) return;
     const players = contenderCarouselScorers();
+    const ordered = sortedScorers();
     if (!players.length) {
       container.innerHTML = `<div class="scorer-carousel__heading"><div><p class="eyebrow">NA BRIGA</p><h4>Outros artilheiros</h4></div></div><div class="empty-state">Nenhum outro jogador ativo com três gols neste momento.</div>`;
       return;
@@ -1565,15 +1605,20 @@
         ${players.map((item, index) => {
           const selection = team(item.team);
           const image = scorerImageFor(item);
-          const ranking = 11 + index;
+          const ranking = Math.max(11, ordered.findIndex(entry => scorerKey(entry.name, entry.team) === scorerKey(item.name, item.team)) + 1 || 11 + index);
           const position = scorerImagePosition(item, "mini");
+          const assists = Number.isFinite(item.assists) ? item.assists : null;
+          const imageMarkup = image
+            ? `<div class="scorer-carousel__image-shell"><div class="scorer-carousel__backdrop" style="background-image:url('${image}');background-position:${position}"></div><img class="scorer-carousel__photo" style="object-position:${position}" src="${image}" alt="${escapeHtml(item.name)}" loading="${index < 2 ? "eager" : "lazy"}" /></div>`
+            : `<div class="scorer-carousel__placeholder"><span>${selection?.flag || "⚽"}</span><strong>${escapeHtml(item.name)}</strong></div>`;
           return `<article class="scorer-carousel__slide ${index === contenderCarouselIndex ? "is-active" : ""}" data-contender-slide="${index}" aria-hidden="${index === contenderCarouselIndex ? "false" : "true"}">
             <div class="scorer-carousel__frame">
               <div class="scorer-carousel__rank">#${ranking}</div>
-              <div class="scorer-carousel__image-shell"><div class="scorer-carousel__backdrop" style="background-image:url('${image}');background-position:${position}"></div><img class="scorer-carousel__photo" style="object-position:${position}" src="${image}" alt="${escapeHtml(item.name)}" loading="${index < 2 ? "eager" : "lazy"}" /></div>
+              ${imageMarkup}
               <div class="scorer-carousel__overlay">
                 <div class="scorer-carousel__team"><span>${selection?.flag || "⚽"}</span>${escapeHtml(selection?.name || item.team)}</div>
                 <h5>${escapeHtml(item.name)}</h5>
+                ${assists !== null ? `<div class="scorer-carousel__assists"><span>Assist.</span><strong>${assists}</strong></div>` : ""}
                 <div class="scorer-carousel__goals"><strong>${item.goals ?? 0}</strong><span>gols</span></div>
               </div>
             </div>
@@ -2032,7 +2077,11 @@
   }
 
   function init() {
-    document.getElementById("dataNote").textContent = baseData.meta.note;
+    const noteElement = document.getElementById("dataNote");
+    if (noteElement) {
+      noteElement.textContent = baseData.meta.note || "";
+      noteElement.hidden = !baseData.meta.note;
+    }
     document.getElementById("sourceLabel").textContent = baseData.meta.sourceLabel;
     loadSaved();
     propagateBracket();

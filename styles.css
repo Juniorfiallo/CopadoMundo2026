@@ -188,7 +188,8 @@ img { display: block; max-width: 100%; }
 .brand-card img { width: 100%; height: 150px; object-fit: cover; border-radius: 14px; }
 .brand-card--wide { grid-column: 1 / -1; min-height: 286px; }
 .brand-card--wide img { height: 185px; object-fit: cover; object-position: center top; }
-.brand-card--logo-card img { object-fit: contain; background: linear-gradient(135deg, #7714ff 0%, #ec1c24 56%, #b9ee02 100%); padding: 8px; }
+.brand-card--logo-card { background: linear-gradient(135deg, rgba(119,20,255,.18) 0%, rgba(236,28,36,.18) 56%, rgba(185,238,2,.18) 100%); }
+.brand-card--logo-card img { object-fit: cover; object-position: center; background: linear-gradient(135deg, #7714ff 0%, #ec1c24 56%, #b9ee02 100%); padding: 0; }
 .brand-card--slogan-card img { object-fit: cover; }
 .brand-card--ball img { object-fit: contain; background: #07131c; }
 
@@ -374,6 +375,8 @@ main { max-width: 1680px; margin: 0 auto; padding: 26px clamp(18px, 4vw, 58px) 7
 }
 .scorer-name .flag { font-size: 1.18rem; }
 .scorer-team { color: var(--muted); font-size: .78rem; margin-top: 3px; }
+.scorer-assists { margin-top: 4px; color: #dff7e8; font-size: .74rem; font-weight: 800; }
+.scorer-assists strong { color: #f4d35d; }
 .scorer-goals {
   display: inline-flex;
   align-items: center;
@@ -1550,6 +1553,22 @@ footer { grid-template-columns: 1fr 1fr minmax(280px,.8fr); align-items: start; 
   text-transform: uppercase;
   letter-spacing: .08em;
 }
+.scorer-carousel__assists {
+  position: absolute;
+  right: 24px;
+  bottom: 126px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(4,18,27,.78);
+  backdrop-filter: blur(8px);
+  box-shadow: 0 10px 24px rgba(0,0,0,.24);
+}
+.scorer-carousel__assists span { color: #cfe0e8; font-size: .66rem; font-weight: 900; letter-spacing: .08em; text-transform: uppercase; }
+.scorer-carousel__assists strong { color: #f4d35d; font-size: 1rem; line-height: 1; }
 .scorer-carousel__nav {
   position: absolute;
   z-index: 8;
@@ -2284,4 +2303,48 @@ body[data-print-format="a4"] .poster-shell { padding: 2mm !important; }
   body[data-print-format="a4"] .poster-brazil-photo { height: 13mm; }
   body[data-print-format="a4"] .poster-brazil-copy strong { font-size: 4.8mm; }
   body[data-print-format="a4"] .poster-brazil-brand { width: 24mm; height: 13mm; }
+}
+
+
+#dataNote[hidden] { display: none !important; }
+
+/* v7.1 — correções de layout, assistências e preenchimento das imagens */
+.scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__viewport {
+  width: 100%;
+  height: clamp(560px, 46vw, 820px) !important;
+  aspect-ratio: auto;
+  min-height: 0;
+}
+.scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__image-shell,
+.scorer-carousel--mini .scorer-carousel__image-shell {
+  background: #07131c;
+}
+.scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__backdrop { display: none; }
+.scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__photo,
+.scorer-carousel--mini .scorer-carousel__photo {
+  width: 100%;
+  height: 100%;
+  padding: 0 !important;
+  object-fit: cover !important;
+}
+.scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__photo { transform: scale(1.06); }
+.scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__slide.is-active .scorer-carousel__photo { transform: scale(1.08); }
+.scorer-carousel--mini .scorer-carousel__viewport {
+  width: 100%;
+  height: clamp(520px, 42vw, 760px) !important;
+  aspect-ratio: auto;
+  min-height: 0;
+}
+.scorer-carousel--mini .scorer-carousel__backdrop { display: none; }
+.scorer-carousel--mini .scorer-carousel__photo { transform: scale(1.03); }
+.scorer-carousel__placeholder { padding: 24px; }
+.scorer-carousel__placeholder strong { max-width: 12ch; }
+@media (max-width: 760px) {
+  .scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__viewport { height: min(82vh, 720px) !important; }
+  .scorer-carousel--mini .scorer-carousel__viewport { height: min(76vh, 620px) !important; }
+  .scorer-carousel__assists {
+    right: 18px;
+    bottom: 104px;
+    padding: 7px 10px;
+  }
 }

@@ -1,9 +1,9 @@
 window.COPA_DATA = {
   meta: {
     title: "Copa do Mundo 2026 — Placar & Chaveamento",
-    seededThrough: "03/07/2026",
-    note: "Resultados e autores dos gols conferidos até o jogo Suíça 2 x 0 Argélia, em 03/07/2026. O painel mantém chave lateral, slogan We Are 26, artilharia confiável e calendário dinâmico.",
-    sourceLabel: "FIFA e ESPN / resultados e artilharia conferidos em 03/07/2026"
+    seededThrough: "06/07/2026",
+    note: "",
+    sourceLabel: "Resultados ESPN/Comunidade e artilharia oficial FIFA, conferidos em 06/07/2026"
   },
   teams: {
     MEX:{name:"México",flag:"🇲🇽"}, RSA:{name:"África do Sul",flag:"🇿🇦"}, KOR:{name:"Coreia do Sul",flag:"🇰🇷"}, CZE:{name:"Tchéquia",flag:"🇨🇿"},
@@ -21,27 +21,27 @@ window.COPA_DATA = {
   },
 
   topScorers: [
-    {name:"Kylian Mbappé", team:"FRA", goals:6, image:"assets/scorer-kylian-mbappe.jpg"},
-    {name:"Lionel Messi", team:"ARG", goals:6, image:"assets/scorer-lionel-messi.jpg"},
-    {name:"Erling Haaland", team:"NOR", goals:5, image:"assets/scorer-erling-haaland.jpg"},
-    {name:"Harry Kane", team:"ENG", goals:5, image:"assets/scorer-harry-kane.jpg"},
-    {name:"Ismaïla Sarr", team:"SEN", goals:4, image:"assets/scorer-ismaila-sarr.jpg"},
-    {name:"Mikel Oyarzabal", team:"ESP", goals:4, image:"assets/scorer-mikel-oyarzabal.jpg"},
-    {name:"Ousmane Dembélé", team:"FRA", goals:4, image:"assets/scorer-ousmane-dembele.jpg"},
-    {name:"Vinícius Júnior", team:"BRA", goals:4, image:"assets/scorer-vinicius-junior.jpg"},
-    {name:"Brian Brobbey", team:"NED", goals:3},
-    {name:"Cody Gakpo", team:"NED", goals:3},
-    {name:"Cristiano Ronaldo", team:"POR", goals:3, image:"assets/scorer-cristiano-ronaldo.jpg"},
-    {name:"Deniz Undav", team:"GER", goals:3, image:"assets/scorer-deniz-undav.jpg"},
-    {name:"Elijah Just", team:"NZL", goals:3},
-    {name:"Folarin Balogun", team:"USA", goals:3, image:"assets/scorer-folarin-balogun.jpg"},
-    {name:"Ismael Saibari", team:"MAR", goals:3, image:"assets/scorer-ismael-saibari.jpg"},
-    {name:"Johan Manzambi", team:"SUI", goals:3, image:"assets/scorer-johan-manzambi.jpg"},
-    {name:"Jonathan David", team:"CAN", goals:3, image:"assets/scorer-jonathan-david.jpg"},
-    {name:"Julián Quiñones", team:"MEX", goals:3, image:"assets/scorer-julian-quinones.jpg"},
-    {name:"Kai Havertz", team:"GER", goals:3},
-    {name:"Matheus Cunha", team:"BRA", goals:3, image:"assets/scorer-matheus-cunha.jpg"},
-    {name:"Yoane Wissa", team:"COD", goals:3}
+    {name:"Kylian Mbappé", team:"FRA", goals:7, assists:2, image:"assets/scorer-kylian-mbappe.jpg"},
+    {name:"Lionel Messi", team:"ARG", goals:7, assists:3, image:"assets/scorer-lionel-messi.jpg"},
+    {name:"Erling Haaland", team:"NOR", goals:7, assists:1, image:"assets/scorer-erling-haaland.jpg"},
+    {name:"Harry Kane", team:"ENG", goals:6, assists:2, image:"assets/scorer-harry-kane.jpg"},
+    {name:"Ismaïla Sarr", team:"SEN", goals:4, assists:1, image:"assets/scorer-ismaila-sarr.jpg"},
+    {name:"Julián Quiñones", team:"MEX", goals:4, assists:1, image:"assets/scorer-julian-quinones.jpg"},
+    {name:"Mikel Oyarzabal", team:"ESP", goals:4, assists:1, image:"assets/scorer-mikel-oyarzabal.jpg"},
+    {name:"Ousmane Dembélé", team:"FRA", goals:4, assists:2, image:"assets/scorer-ousmane-dembele.jpg"},
+    {name:"Vinícius Júnior", team:"BRA", goals:4, assists:1, image:"assets/scorer-vinicius-junior.jpg"},
+    {name:"Brian Brobbey", team:"NED", goals:3, assists:0, image:"https://sassets.knvb.nl/sites/onsoranje.nl/files/players/ac1404b1a1ac6bcfd2b3b71febcf03d8.png"},
+    {name:"Cody Gakpo", team:"NED", goals:3, assists:1, image:"https://cdn-img.staticzz.com/img/planteis/new/41/21/11084121_cody_gakpo_20240608073739.jpg"},
+    {name:"Cristiano Ronaldo", team:"POR", goals:3, assists:1, image:"assets/scorer-cristiano-ronaldo.jpg"},
+    {name:"Deniz Undav", team:"GER", goals:3, assists:0, image:"assets/scorer-deniz-undav.jpg"},
+    {name:"Folarin Balogun", team:"USA", goals:3, assists:1, image:"assets/scorer-folarin-balogun.jpg"},
+    {name:"Ismael Saibari", team:"MAR", goals:3, assists:1, image:"assets/scorer-ismael-saibari.jpg"},
+    {name:"Johan Manzambi", team:"SUI", goals:3, assists:0, image:"assets/scorer-johan-manzambi.jpg"},
+    {name:"Jonathan David", team:"CAN", goals:3, assists:1, image:"assets/scorer-jonathan-david.jpg"},
+    {name:"Matheus Cunha", team:"BRA", goals:3, assists:0, image:"assets/scorer-matheus-cunha.jpg"},
+    {name:"Elijah Just", team:"NZL", goals:3, assists:0},
+    {name:"Kai Havertz", team:"GER", goals:3, assists:1},
+    {name:"Yoane Wissa", team:"COD", goals:3, assists:1}
   ],
   goalEvents: {
     m73: [
@@ -103,6 +103,14 @@ window.COPA_DATA = {
     m85: [
       {team:"SUI", player:"Breel Embolo", minute:"10"},
       {team:"SUI", player:"Dan Ndoye", minute:"46"}
+    ],
+    m89: [
+      {team:"MAR", player:"Azzedine Ounahi", minute:"50"},
+      {team:"MAR", player:"Azzedine Ounahi", minute:"82"},
+      {team:"MAR", player:"Soufiane Rahimi", minute:"90+8"}
+    ],
+    m90: [
+      {team:"FRA", player:"Kylian Mbappé", minute:"70", type:"penalty"}
     ]
   },
 
@@ -203,8 +211,8 @@ window.COPA_DATA = {
     {id:"m87",stage:"R32",date:"2026-07-03",time:"22:30",home:"COL",away:"GHA",hg:null,ag:null,hp:null,ap:null},
     {id:"m88",stage:"R32",date:"2026-07-03",time:"15:00",home:"AUS",away:"EGY",hg:null,ag:null,hp:null,ap:null},
 
-    {id:"m89",stage:"R16",date:"2026-07-04",time:"14:00",fromHome:"m73",fromAway:"m75",home:null,away:null,hg:null,ag:null,hp:null,ap:null},
-    {id:"m90",stage:"R16",date:"2026-07-04",time:"18:00",fromHome:"m74",fromAway:"m77",home:null,away:null,hg:null,ag:null,hp:null,ap:null},
+    {id:"m89",stage:"R16",date:"2026-07-04",time:"14:00",fromHome:"m73",fromAway:"m75",home:"CAN",away:"MAR",hg:0,ag:3,hp:null,ap:null},
+    {id:"m90",stage:"R16",date:"2026-07-04",time:"18:00",fromHome:"m74",fromAway:"m77",home:"PAR",away:"FRA",hg:0,ag:1,hp:null,ap:null},
     {id:"m91",stage:"R16",date:"2026-07-05",time:"17:00",fromHome:"m76",fromAway:"m78",home:null,away:null,hg:null,ag:null,hp:null,ap:null},
     {id:"m92",stage:"R16",date:"2026-07-05",time:"21:00",fromHome:"m79",fromAway:"m80",home:null,away:null,hg:null,ag:null,hp:null,ap:null},
     {id:"m93",stage:"R16",date:"2026-07-06",time:"16:00",fromHome:"m83",fromAway:"m84",home:null,away:null,hg:null,ag:null,hp:null,ap:null},

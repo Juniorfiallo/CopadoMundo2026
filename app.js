@@ -8,7 +8,7 @@
     : JSON.parse(JSON.stringify(value));
 
   const REMOTE_SCORER_PREFIX = "remote-scorer-";
-  const DATA_VERSION = 6.9;
+  const DATA_VERSION = 7.0;
   const MANUAL_MATCH_EVENT_OVERRIDES = Object.freeze({
     m83: [
       {team:"CRO", player:"Ivan Perišić", minute:"53", type:"goal"},
@@ -180,7 +180,7 @@
 
   let wasmWinner = null;
   const storedBracketZoom = Number(localStorage.getItem("copa2026-bracket-zoom-v5"));
-  let bracketZoom = Number.isFinite(storedBracketZoom) && storedBracketZoom > 0 ? storedBracketZoom : (window.innerWidth <= 760 ? 2.8 : 1);
+  let bracketZoom = Number.isFinite(storedBracketZoom) && storedBracketZoom > 0 ? storedBracketZoom : (window.innerWidth <= 760 ? 3.4 : 1);
   let bracketFitScale = 1;
   let scorerCarouselIndex = 0;
   let scorerCarouselTimer = null;
@@ -190,7 +190,7 @@
   let deferredInstallPrompt = null;
   let syncingBracketScroll = false;
   const BRACKET_ZOOM_MIN = 0.4;
-  const BRACKET_ZOOM_MAX = 6;
+  const BRACKET_ZOOM_MAX = 7;
   const SCORER_CAROUSEL_INTERVAL = 5200;
   const CONTENDER_CAROUSEL_INTERVAL = 4300;
   const LIVE_UPDATE_ENDPOINT = "/.netlify/functions/update-copa";
@@ -875,6 +875,36 @@
     return `${match.hg}${homePen} × ${match.ag}${awayPen}`;
   }
 
+  function matchSortTimestamp(match) {
+    const dateText = match?.date || "1900-01-01";
+    const timeText = match?.time || "00:00";
+    return new Date(`${dateText}T${timeText.length === 5 ? timeText : "00:00"}:00`).getTime() || 0;
+  }
+
+  function goalSummaryForMatch(match) {
+    const events = (state.goalEvents[match.id] || [])
+      .slice()
+      .sort((a, b) => goalMinuteValue(a.minute) - goalMinuteValue(b.minute));
+    if (!events.length) return "autores dos gols ainda não cadastrados";
+    return events.map(event => {
+      const item = team(event.team);
+      const minute = event.minute ? ` ${event.minute}'` : "";
+      const type = event.type === "penalty" ? " (pên.)" : "";
+      return `${item?.flag || "⚽"} ${event.player}${minute}${type}`;
+    }).join("; ");
+  }
+
+  function latestCompletedMatchSummary() {
+    const completed = allMatches()
+      .filter(match => match.home && match.away && match.hg !== null && match.ag !== null)
+      .sort((a, b) => matchSortTimestamp(b) - matchSortTimestamp(a) || knockoutMatchNumber(b) - knockoutMatchNumber(a));
+    const match = completed[0];
+    if (!match) return "Nenhum jogo concluído salvo ainda.";
+    const home = team(match.home);
+    const away = team(match.away);
+    return `Último jogo conferido: ${home?.flag || ""} ${home?.name || match.home} ${printableScore(match)} ${away?.flag || ""} ${away?.name || match.away} — ${formatDate(match.date, false)}${match.time ? `, ${match.time}` : ""}. Gols: ${goalSummaryForMatch(match)}.`;
+  }
+
   function renderPosterMatch(match) {
     const home = team(match.home);
     const away = team(match.away);
@@ -918,9 +948,11 @@
     const champion = getWinner(final);
     const championTeam = team(champion);
     poster.innerHTML = `<div class="poster-shell">
+      <img class="poster-background-art" src="assets/worldcup-2026-art.png" alt="Arte oficial Copa 2026" />
+      <img class="poster-watermark-trophy" src="assets/logo-oficial.png" alt="Taça ao fundo" />
       <header class="poster-header poster-header--premium">
         <div class="poster-header__logo"><img src="assets/logo-oficial.png" alt="Logo Copa 2026" /></div>
-        <div class="poster-header__copy"><p>WE ARE 26</p><h1>FIFA WORLD CUP 2026</h1><span>Chaveamento oficial • placares • bandeiras • campeão</span></div>
+        <div class="poster-header__copy"><p>WE ARE 26</p><h1>FIFA WORLD CUP 2026</h1><span>Poster do mata-mata • 16-avos ao campeão • placares e bandeiras</span></div>
         <div class="poster-header__ball"><img src="assets/bola-oficial.png" alt="Bola oficial" /></div>
       </header>
       <div class="poster-bracket-grid">
@@ -1246,7 +1278,8 @@
         `${result.matched} partida(s) conferida(s)`,
         result.scorers ? `${result.scorers} artilheiro(s) validados` : "artilharia recalculada automaticamente"
       ].join(" • ");
-      if (status) status.innerHTML = `<strong>Atualizado às ${time}</strong> • ${detail} • fonte: ${escapeHtml(payload.provider || "dados verificados")}${payload.degraded ? " • modo de segurança" : ""}${fallbackUsed ? " • fallback direto" : ""}`;
+      const latestSummary = latestCompletedMatchSummary();
+      if (status) status.innerHTML = `<strong>Atualizado às ${time}</strong> • ${detail} • fonte: ${escapeHtml(payload.provider || "dados verificados")}${payload.degraded ? " • modo de segurança" : ""}${fallbackUsed ? " • fallback direto" : ""}<br><span>${escapeHtml(latestSummary)}</span>`;
     } catch (error) {
       console.error(error);
       if (status) status.innerHTML = `<strong>Não foi possível consultar a fonte agora.</strong> Os dados confiáveis já salvos foram preservados. <span>${escapeHtml(error.message)}</span>`;

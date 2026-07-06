@@ -1991,7 +1991,7 @@ footer { grid-template-columns: 1fr 1fr minmax(280px,.8fr); align-items: start; 
 }
 
 
-/* v6.9 — cards responsivos, zoom móvel ampliado e pôster premium */
+/* v7.0 — atualização confiável, cards full-frame, zoom mobile e pôster premium */
 .scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__viewport {
   width: 100%;
   height: auto !important;
@@ -2007,8 +2007,8 @@ footer { grid-template-columns: 1fr 1fr minmax(280px,.8fr); align-items: start; 
 .scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__photo {
   width: 100%;
   height: 100%;
-  padding: clamp(14px, 1.8vw, 22px);
-  object-fit: contain;
+  padding: 0;
+  object-fit: cover;
   object-position: center center;
 }
 .scorer-carousel--mini .scorer-carousel__viewport {
@@ -2035,15 +2035,14 @@ footer { grid-template-columns: 1fr 1fr minmax(280px,.8fr); align-items: start; 
 .scorer-carousel__photo { border-radius: inherit; }
 
 .bracket-scroll {
-  overscroll-behavior-x: contain;
-  overscroll-behavior-y: auto !important;
+  overscroll-behavior: auto !important;
   touch-action: pan-x pan-y;
 }
 @media (max-width: 760px) {
   .bracket-scroll {
-    height: 90vh;
-    max-height: 90vh;
-    min-height: 680px;
+    height: 94vh;
+    max-height: 94vh;
+    min-height: 760px;
   }
   #bracketZoomRange { width: min(250px, 58vw); }
   .scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__viewport,
@@ -2234,7 +2233,38 @@ footer { grid-template-columns: 1fr 1fr minmax(280px,.8fr); align-items: start; 
   .poster-brazil-copy span { color: #d7e8ee; font-size: 1.4mm; }
   .poster-brazil-brand { width: 31mm; height: 19mm; object-fit: cover; border-radius: 2.5mm; }
 
-  body[data-print-format="a4"] .poster-shell { padding: 2mm !important; }
+  
+.poster-background-art {
+  position: absolute;
+  right: 8mm;
+  top: 12mm;
+  width: 48mm;
+  height: 62mm;
+  object-fit: contain;
+  opacity: .24;
+  mix-blend-mode: screen;
+  filter: saturate(1.12) contrast(1.05);
+  z-index: 0;
+}
+.poster-watermark-trophy {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58mm;
+  height: 74mm;
+  transform: translate(-50%, -48%);
+  object-fit: contain;
+  opacity: .13;
+  filter: drop-shadow(0 3mm 8mm rgba(255,210,91,.35));
+  z-index: 0;
+}
+.poster-header__ball img,
+.poster-center-mascots,
+.poster-background-art,
+.poster-brazil-brand {
+  background: rgba(255,255,255,.04);
+}
+body[data-print-format="a4"] .poster-shell { padding: 2mm !important; }
   body[data-print-format="a4"] .poster-header--premium { grid-template-columns: 20mm 1fr 20mm !important; padding: 1.4mm 3mm !important; }
   body[data-print-format="a4"] .poster-header__logo img,
   body[data-print-format="a4"] .poster-header__ball img { width: 19mm !important; height: 15mm !important; }

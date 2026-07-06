@@ -1,4 +1,4 @@
-# Copa 2026 — Painel Premium v6.9.0
+# Copa 2026 — Painel Premium v7.0.0
 
 Aplicativo PWA em HTML, CSS e JavaScript, com motor opcional em C++/WebAssembly, para acompanhar resultados, grupos, mata-mata, autores dos gols e artilharia da Copa do Mundo 2026.
 
@@ -70,7 +70,7 @@ Depois de publicar uma nova versão:
 4. pressione `Command + Shift + R` no Mac ou limpe o cache do navegador no celular.
 
 
-## Atualização v6.9.0
+## Atualização v7.0.0
 
 - Botão **Atualizar dados** sincroniza placares, autores/minutos dos gols e a tabela completa de artilheiros.
 - Artilharia ordenada por gols e, em empate, por ordem alfabética.
@@ -80,7 +80,7 @@ Depois de publicar uma nova versão:
 - Mata-mata móvel inicia em 180%, permite até 500% e entrega a rolagem para a página ao chegar ao limite vertical.
 - Pôster A4/A3 redesenhado com chaves laterais, campeão central, bola, mascotes e rodapé “Brasil, Rumo ao Hexa”.
 
-## Histórico da atualização v6.9
+## Histórico da atualização v7.0
 - Artilharia atualizada pelo ranking do ge, com fallback local verificado.
 - Carrossel principal com fundo desfocado e imagem centralizada; galeria 11–15 em preenchimento total.
 - Zoom do mata-mata ampliado para 500% no celular e rolagem encadeada com a página.

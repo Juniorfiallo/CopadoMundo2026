@@ -71,7 +71,7 @@ function jsonResponse(body, statusCode = 200) {
 
 async function fetchJson(url, timeout = 18000) {
   const response = await fetch(url, {
-    headers: {Accept:"application/json", "User-Agent":"Copa-2026-Painel-Premium/6.9"},
+    headers: {Accept:"application/json", "User-Agent":"Copa-2026-Painel-Premium/7.0"},
     cache: "no-store",
     signal: AbortSignal.timeout(timeout)
   });
@@ -84,7 +84,7 @@ async function fetchText(url, timeout = 18000) {
     headers: {
       Accept:"text/html,application/xhtml+xml",
       "Accept-Language":"pt-BR,pt;q=0.9,en;q=0.7",
-      "User-Agent":"Mozilla/5.0 (compatible; Copa-2026-Painel-Premium/6.9)"
+      "User-Agent":"Mozilla/5.0 (compatible; Copa-2026-Painel-Premium/7.0)"
     },
     cache:"no-store",
     signal:AbortSignal.timeout(timeout)

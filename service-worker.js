@@ -1,4 +1,4 @@
-const CACHE_NAME = "copa-2026-premium-v6-9-0";
+const CACHE_NAME = "copa-2026-premium-v7-0-0";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -8,6 +8,7 @@ const APP_SHELL = [
   "./data/data.js",
   "./assets/logo-oficial.png",
   "./assets/we-are-26.png",
+  "./assets/worldcup-2026-art.png",
   "./assets/mascotes-officiais.png",
   "./assets/bola-oficial.png",
   "./assets/copa-groups-background.png",

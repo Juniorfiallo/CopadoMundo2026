@@ -19,7 +19,7 @@
 - Espanha 3 × 0 Áustria — Mikel Oyarzabal aos 36 e 89; Pedro Porro aos 66.
 - Suíça 2 × 0 Argélia — Breel Embolo aos 10; Dan Ndoye aos 46.
 
-## Fontes adicionadas na v6.9.0
+## Fontes adicionadas na v7.0.0
 
 - Ranking de artilheiros: ge.globo, matéria “Artilharia da Copa do Mundo 2026: veja lista de goleadores”, atualizada em 05/07/2026.
 - Resultados e eventos: FIFA, ESPN Scoreboard/Summary e fonte comunitária como contingência.

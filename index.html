@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#050c12" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Copa 2026" />
+  <meta name="description" content="Placar editável, artilharia, classificação e chaveamento premium da Copa do Mundo 2026." />
+  <title>Copa 2026 — Painel Premium v6.5</title>
+  <link rel="icon" href="assets/icon-192.png" type="image/png" />
+  <link rel="apple-touch-icon" href="assets/icon-192.png" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="hero__content">
+      <p class="eyebrow">PAINEL PREMIUM • WE ARE 26 • 104 JOGOS</p>
+      <h1>FIFA WORLD CUP <span>2026</span></h1>
+      <p class="hero__lead">Um painel premium para registrar resultados, acompanhar a fase de grupos, ver o mata-mata avançar automaticamente dos dois lados até o campeão e destacar a artilharia da Copa.</p>
+      <div class="hero__headline-row">
+        <img class="hero__slogan" src="assets/we-are-26.png" alt="We Are 26" />
+        <img class="hero__logo" src="assets/logo-oficial.png" alt="Logo da Copa do Mundo 2026" />
+      </div>
+      <div class="hero__badges">
+        <span>🇨🇦 Canadá</span><span>🇲🇽 México</span><span>🇺🇸 Estados Unidos</span>
+        <span id="engineBadge" class="engine-badge">Motor JavaScript</span>
+        <span class="engine-badge">App responsivo • PWA</span>
+      </div>
+      <div class="hero__actions">
+        <button class="button jump" data-go="chave">Ver chave completa</button>
+        <button class="button button--ghost jump" data-go="grupos">Abrir fase de grupos</button>
+      </div>
+    </div>
+
+    <div class="hero__brand-grid" aria-label="Elementos oficiais da identidade visual">
+      <article class="brand-card brand-card--wide">
+        <div class="brand-card__head">
+          <p class="eyebrow">MASCOTES OFICIAIS</p>
+          <h3>Maple, Zayu e Clutch</h3>
+        </div>
+        <img src="assets/mascotes-officiais.png" alt="Mascotes oficiais da Copa do Mundo 2026" />
+      </article>
+      <article class="brand-card brand-card--ball">
+        <div class="brand-card__head">
+          <p class="eyebrow">BOLA OFICIAL</p>
+          <h3>Trionda</h3>
+        </div>
+        <img src="assets/bola-oficial.png" alt="Bola oficial da Copa do Mundo 2026" />
+      </article>
+      <article class="brand-card brand-card--logo-card">
+        <div class="brand-card__head">
+          <p class="eyebrow">LOGO</p>
+          <h3>Identidade 2026</h3>
+        </div>
+        <img src="assets/logo-oficial.png" alt="Logo oficial da Copa do Mundo 2026" />
+      </article>
+      <article class="brand-card brand-card--slogan-card">
+        <div class="brand-card__head">
+          <p class="eyebrow">SLOGAN</p>
+          <h3>We Are 26</h3>
+        </div>
+        <img src="assets/we-are-26.png" alt="Slogan We Are 26" />
+      </article>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Navegação principal">
+    <button class="tab is-active" data-tab="painel">Visão geral</button>
+    <button class="tab" data-tab="grupos">Fase de grupos</button>
+    <button class="tab" data-tab="chave">Mata-mata</button>
+    <button class="tab" data-tab="jogos">Todos os jogos</button>
+  </nav>
+
+  <div class="toolbar">
+    <div>
+      <strong id="saveStatus">Salvo neste navegador</strong>
+      <small id="dataNote"></small>
+    </div>
+    <div class="toolbar__actions">
+      <button id="updateDataBtn" class="button button--update" type="button">↻ Atualizar dados</button>
+      <button id="installAppBtn" class="button button--install" type="button" hidden>Instalar app</button>
+      <button id="exportBtn" class="button">Exportar backup</button>
+      <label class="button button--ghost" for="importInput">Importar backup</label>
+      <input id="importInput" type="file" accept="application/json" hidden />
+      <button id="resetBtn" class="button button--danger">Restaurar dados</button>
+    </div>
+    <div id="updateStatus" class="update-status" aria-live="polite"></div>
+  </div>
+
+  <main>
+    <section id="painel" class="page is-active" aria-labelledby="painelTitle">
+      <div class="section-heading">
+        <div><p class="eyebrow">RESUMO DO TORNEIO</p><h2 id="painelTitle">Visão geral</h2></div>
+        <p>Layout renovado com imagens completas, artilharia editável e calendário dinâmico que monta os próximos confrontos automaticamente.</p>
+      </div>
+
+      <div id="stats" class="stats"></div>
+
+      <div class="overview-grid">
+        <article class="spotlight-card">
+          <div class="spotlight-card__copy">
+            <p class="eyebrow">IDENTIDADE VISUAL</p>
+            <h3>We Are 26 em equilíbrio com bola, mascotes e logo</h3>
+            <p>O painel agora reúne os elementos visuais principais da Copa 2026 com mais presença, melhor hierarquia e uma leitura mais premium, sem perder a identidade anterior.</p>
+            <ul class="spotlight-list">
+              <li>Chaveamento automático a partir dos 16-avos</li>
+              <li>Dois lados da chave convergindo para o campeão no centro</li>
+              <li>Artilharia com top 10 jogadores em destaque</li>
+            </ul>
+            <button class="button jump" data-go="jogos">Editar todos os jogos</button>
+          </div>
+          <div class="spotlight-card__media">
+            <img src="assets/we-are-26.png" alt="We Are 26" />
+            <div class="spotlight-card__mini-grid">
+              <img src="assets/logo-oficial.png" alt="Logo da Copa" />
+              <img src="assets/bola-oficial.png" alt="Bola oficial" />
+            </div>
+          </div>
+          <div class="scorer-showcase-grid">
+            <div id="scorerCarousel" class="scorer-carousel" aria-label="Carrossel principal dos artilheiros da Copa"></div>
+            <div id="contenderCarousel" class="scorer-carousel scorer-carousel--mini" aria-label="Carrossel dos demais artilheiros ativos"></div>
+          </div>
+        </article>
+
+        <aside class="panel-block panel-block--scorers">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">ARTILHARIA DA COPA</p>
+              <h3>Top 10 goleadores</h3>
+            </div>
+            <span class="mini-note">Golden Boot tracker</span>
+          </div>
+          <div id="topScorers" class="top-scorers"></div>
+
+          <details class="scorer-manager" open>
+            <summary>Atualizar artilharia</summary>
+            <p>Adicione jogadores e altere os gols. Os campos permanecem editáveis somente enquanto a seleção ainda estiver viva na competição.</p>
+            <form id="scorerForm" class="scorer-form">
+              <select id="scorerTeam" aria-label="Seleção do jogador" required></select>
+              <input id="scorerName" type="text" maxlength="60" placeholder="Nome do jogador" autocomplete="off" required />
+              <input id="scorerGoals" type="number" min="0" max="30" value="0" inputmode="numeric" aria-label="Gols do jogador" required />
+              <button class="button" type="submit">Adicionar jogador</button>
+            </form>
+            <div id="scorerEditor" class="scorer-editor"></div>
+          </details>
+        </aside>
+      </div>
+
+      <div class="dashboard-grid">
+        <article class="feature-card feature-card--summary">
+          <div id="championSummary"></div>
+          <div class="feature-card__stack">
+            <img src="assets/mascotes-officiais.png" alt="Mascotes oficiais" />
+          </div>
+        </article>
+        <div id="nextMatches" class="panel-block panel-block--calendar"></div>
+      </div>
+    </section>
+
+    <section id="grupos" class="page" aria-labelledby="groupsTitle">
+      <div class="section-heading">
+        <div><p class="eyebrow">12 GRUPOS • 48 SELEÇÕES</p><h2 id="groupsTitle">Fase de grupos</h2></div>
+        <p>Edite os 72 resultados. A tabela calcula jogos, vitórias, empates, derrotas, gols, saldo e pontos.</p>
+      </div>
+      <div id="groupsGrid" class="groups-grid"></div>
+    </section>
+
+    <section id="chave" class="page" aria-labelledby="bracketTitle">
+      <div class="section-heading">
+        <div><p class="eyebrow">ELIMINAÇÃO DIRETA</p><h2 id="bracketTitle">Chaveamento do mata-mata</h2></div>
+        <p>A chave agora é dividida em dois lados. À esquerda e à direita, os confrontos avançam automaticamente até o campeão no centro.</p>
+      </div>
+      <div class="bracket-tools" aria-label="Controles de zoom do chaveamento">
+        <div class="bracket-tools__group">
+          <span class="zoom-icon" aria-hidden="true">🔍</span>
+          <button id="zoomOutBtn" class="zoom-button" type="button" aria-label="Diminuir zoom">−</button>
+          <input id="bracketZoomRange" type="range" min="40" max="250" step="5" value="100" aria-label="Zoom do chaveamento" />
+          <button id="zoomInBtn" class="zoom-button" type="button" aria-label="Aumentar zoom">+</button>
+          <button id="zoomResetBtn" class="zoom-button zoom-button--wide" type="button">100%</button>
+          <button id="zoomFitBtn" class="zoom-button zoom-button--wide" type="button">Centralizar</button>
+          <button id="printA4Btn" class="zoom-button zoom-button--print" type="button">PDF A4</button>
+          <button id="printA3Btn" class="zoom-button zoom-button--print" type="button">PDF A3</button>
+        </div>
+        <strong id="zoomLabel">100%</strong>
+        <span class="bracket-tools__hint">Use os botões, a barra ou o gesto de pinça no celular.</span>
+      </div>
+      <div id="bracketHScroll" class="bracket-hscroll" aria-label="Rolagem horizontal do chaveamento" tabindex="0"><div id="bracketHScrollTrack"></div></div>
+      <div class="bracket-legend">
+        <span><i class="legend-dot legend-dot--winner"></i> classificado</span>
+        <span><i class="legend-dot legend-dot--pending"></i> aguardando resultado</span>
+        <span>Se houver empate no tempo normal, informe os pênaltis entre parênteses por meio dos campos exibidos.</span>
+      </div>
+      <div id="bracket" class="bracket-scroll"></div>
+      <div id="thirdPlace" class="third-place"></div>
+    </section>
+
+    <section id="jogos" class="page" aria-labelledby="matchesTitle">
+      <div class="section-heading">
+        <div><p class="eyebrow">CALENDÁRIO COMPLETO</p><h2 id="matchesTitle">Todos os jogos</h2></div>
+        <p>Filtre por fase, grupo ou seleção. Os mesmos placares podem ser editados aqui.</p>
+      </div>
+      <div class="filters">
+        <input id="matchSearch" type="search" placeholder="Buscar seleção..." autocomplete="off" />
+        <select id="stageFilter">
+          <option value="all">Todas as fases</option>
+          <option value="GROUP">Fase de grupos</option>
+          <option value="R32">16-avos / Rodada de 32</option>
+          <option value="R16">Oitavas de final</option>
+          <option value="QF">Quartas de final</option>
+          <option value="SF">Semifinais</option>
+          <option value="THIRD">Terceiro lugar</option>
+          <option value="FINAL">Final</option>
+        </select>
+      </div>
+      <div id="matchesList" class="matches-list"></div>
+    </section>
+  </main>
+
+  <section id="printPoster" class="print-poster" aria-hidden="true"></section>
+
+  <footer>
+    <div>
+      <strong>Projeto pessoal não oficial.</strong>
+      <p>As marcas, mascotes e demais elementos da FIFA pertencem aos respectivos titulares. Os arquivos visuais usados neste projeto foram fornecidos pelo usuário para composição do painel.</p>
+    </div>
+    <div>
+      <strong>Dados e atualização</strong>
+      <p id="sourceLabel"></p>
+      <p><a class="official-source-link" href="https://www.fifa.com/pt/tournaments/mens/worldcup/canadamexicousa2026/standings" target="_blank" rel="noopener noreferrer">Conferir classificação no site oficial da FIFA ↗</a></p>
+    </div>
+    <div class="watch-card">
+      <div class="watch-card__heading">
+        <span>Onde assistir</span>
+        <small>Abra o canal em uma nova janela</small>
+      </div>
+      <a class="cazetv-link" href="https://www.youtube.com/cazetv" target="_blank" rel="noopener noreferrer" aria-label="Abrir CazéTV no YouTube">
+        <img src="assets/cazetv-logo.png" alt="CazéTV ao vivo" />
+        <span>Assistir na CazéTV</span>
+        <strong>↗</strong>
+      </a>
+    </div>
+  </footer>
+
+  <dialog id="goalDialog" class="goal-dialog" aria-labelledby="goalDialogTitle">
+    <form method="dialog" class="goal-dialog__shell">
+      <header class="goal-dialog__head">
+        <div>
+          <p class="eyebrow">DETALHES DA PARTIDA</p>
+          <h3 id="goalDialogTitle">Editar autores dos gols</h3>
+          <p id="goalDialogMatch"></p>
+        </div>
+        <button class="dialog-close" value="cancel" aria-label="Fechar">×</button>
+      </header>
+      <div class="goal-dialog__body">
+        <div class="goal-dialog__form">
+          <select id="goalTeam" aria-label="Seleção do gol"></select>
+          <input id="goalPlayer" type="text" maxlength="60" placeholder="Jogador" autocomplete="off" />
+          <input id="goalMinute" type="text" maxlength="8" placeholder="Minuto, ex.: 90+2" autocomplete="off" />
+          <button id="addGoalEventBtn" class="button" type="button">Adicionar gol</button>
+        </div>
+        <p class="goal-dialog__help">Depois de cadastrar, passe o mouse sobre a seleção no quadro. No celular ou tablet, toque sobre o time.</p>
+        <div id="goalEventList" class="goal-event-list"></div>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="data/data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

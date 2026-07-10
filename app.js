@@ -1,15 +1,15 @@
 (() => {
   "use strict";
 
-  const STORAGE_KEY = "copa2026-tracker-v7-2";
-  const LEGACY_STORAGE_KEYS = ["copa2026-tracker-v1", "copa2026-tracker-v7-0", "copa2026-tracker-v7-1"];
+  const STORAGE_KEY = "copa2026-tracker-v7-3";
+  const LEGACY_STORAGE_KEYS = ["copa2026-tracker-v1", "copa2026-tracker-v7-0", "copa2026-tracker-v7-1", "copa2026-tracker-v7-2"];
   const baseData = window.COPA_DATA;
   const clone = (value) => typeof structuredClone === "function"
     ? structuredClone(value)
     : JSON.parse(JSON.stringify(value));
 
   const REMOTE_SCORER_PREFIX = "remote-scorer-";
-  const DATA_VERSION = 7.2;
+  const DATA_VERSION = 7.3;
   const MANUAL_MATCH_EVENT_OVERRIDES = Object.freeze({
     m83: [
       {team:"CRO", player:"Ivan Perišić", minute:"53", type:"goal"},
@@ -371,11 +371,11 @@
   }
 
   function mainCarouselScorers() {
-    return featuredSortedScorers().slice(0, 10);
+    return featuredSortedScorers().slice(0, 5);
   }
 
   function contenderCarouselScorers() {
-    return featuredSortedScorers().slice(10, 15);
+    return featuredSortedScorers().slice(5, 10);
   }
 
   function buildKnockoutGoalScorerMap(goalEventsByMatch) {
@@ -1563,7 +1563,7 @@
     scorerCarouselIndex = ((scorerCarouselIndex % topTen.length) + topTen.length) % topTen.length;
     container.innerHTML = `
       <div class="scorer-carousel__heading">
-        <div><p class="eyebrow">GALERIA PRINCIPAL</p><h4>Top 10 em destaque</h4></div>
+        <div><p class="eyebrow">GALERIA PRINCIPAL</p><h4>5 artilheiros da Copa</h4></div>
         <span>${topTen.length} jogadores</span>
       </div>
       <div class="scorer-carousel__viewport">
@@ -1630,20 +1630,20 @@
     const players = contenderCarouselScorers();
     const ordered = featuredSortedScorers();
     if (!players.length) {
-      container.innerHTML = `<div class="scorer-carousel__heading"><div><p class="eyebrow">NA BRIGA</p><h4>Outros artilheiros</h4></div></div><div class="empty-state">Nenhum outro jogador ativo com três gols neste momento.</div>`;
+      container.innerHTML = `<div class="scorer-carousel__heading"><div><p class="eyebrow">NA BRIGA</p><h4>Outros 5 artilheiros</h4></div></div><div class="empty-state">Nenhum outro artilheiro com foto cadastrada neste momento.</div>`;
       return;
     }
     contenderCarouselIndex = ((contenderCarouselIndex % players.length) + players.length) % players.length;
     container.innerHTML = `
       <div class="scorer-carousel__heading">
-        <div><p class="eyebrow">POSIÇÕES 11 A 15</p><h4>Outros artilheiros</h4></div>
+        <div><p class="eyebrow">NA BRIGA</p><h4>Outros 5 artilheiros</h4></div>
         <span>${players.length} jogadores</span>
       </div>
       <div class="scorer-carousel__viewport">
         ${players.map((item, index) => {
           const selection = team(item.team);
           const image = scorerImageFor(item);
-          const ranking = Math.max(11, ordered.findIndex(entry => scorerKey(entry.name, entry.team) === scorerKey(item.name, item.team)) + 1 || 11 + index);
+          const ranking = ordered.findIndex(entry => scorerKey(entry.name, entry.team) === scorerKey(item.name, item.team)) + 1 || 6 + index;
           const position = scorerImagePosition(item, "mini");
           const assists = Number.isFinite(item.assists) ? item.assists : null;
           const imageMarkup = image

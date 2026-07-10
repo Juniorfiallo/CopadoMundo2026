@@ -1,9 +1,9 @@
 window.COPA_DATA = {
   meta: {
     title: "Copa do Mundo 2026 — Placar & Chaveamento",
-    seededThrough: "06/07/2026",
+    seededThrough: "10/07/2026",
     note: "",
-    sourceLabel: "Resultados ESPN/Comunidade e artilharia oficial FIFA, conferidos em 06/07/2026"
+    sourceLabel: "Artilharia validada com a página oficial de estatísticas da FIFA e fontes de apoio; dados locais antigos são bloqueados automaticamente."
   },
   teams: {
     MEX:{name:"México",flag:"🇲🇽"}, RSA:{name:"África do Sul",flag:"🇿🇦"}, KOR:{name:"Coreia do Sul",flag:"🇰🇷"}, CZE:{name:"Tchéquia",flag:"🇨🇿"},
@@ -21,8 +21,8 @@ window.COPA_DATA = {
   },
 
   topScorers: [
-    {name:"Kylian Mbappé", team:"FRA", goals:7, assists:2, image:"assets/scorer-kylian-mbappe.jpg"},
-    {name:"Lionel Messi", team:"ARG", goals:7, assists:3, image:"assets/scorer-lionel-messi.jpg"},
+    {name:"Kylian Mbappé", team:"FRA", goals:8, assists:2, image:"assets/scorer-kylian-mbappe.jpg"},
+    {name:"Lionel Messi", team:"ARG", goals:8, assists:3, image:"assets/scorer-lionel-messi.jpg"},
     {name:"Erling Haaland", team:"NOR", goals:7, assists:1, image:"assets/scorer-erling-haaland.jpg"},
     {name:"Harry Kane", team:"ENG", goals:6, assists:2, image:"assets/scorer-harry-kane.jpg"},
     {name:"Ismaïla Sarr", team:"SEN", goals:4, assists:1, image:"assets/scorer-ismaila-sarr.jpg"},

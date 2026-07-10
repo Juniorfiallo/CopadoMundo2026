@@ -6,8 +6,8 @@ const FIFA_SCORERS_URL = "https://www.fifa.com/pt/tournaments/mens/worldcup/cana
 const GE_SCORERS_URL = "https://ge.globo.com/futebol/copa-do-mundo/noticia/2026/06/12/copa-do-mundo-2026-veja-ranking-de-artilheiros-e-garcons.ghtml";
 
 const OFFICIAL_SCORERS = Object.freeze([
-  {name:"Kylian Mbappé",team:"FRA",goals:7,assists:2,image:"assets/scorer-kylian-mbappe.jpg"},
-  {name:"Lionel Messi",team:"ARG",goals:7,assists:3,image:"assets/scorer-lionel-messi.jpg"},
+  {name:"Kylian Mbappé",team:"FRA",goals:8,assists:2,image:"assets/scorer-kylian-mbappe.jpg"},
+  {name:"Lionel Messi",team:"ARG",goals:8,assists:3,image:"assets/scorer-lionel-messi.jpg"},
   {name:"Erling Haaland",team:"NOR",goals:7,assists:1,image:"assets/scorer-erling-haaland.jpg"},
   {name:"Harry Kane",team:"ENG",goals:6,assists:2,image:"assets/scorer-harry-kane.jpg"},
   {name:"Ismaïla Sarr",team:"SEN",goals:4,assists:1,image:"assets/scorer-ismaila-sarr.jpg"},
@@ -73,7 +73,7 @@ function jsonResponse(body, statusCode = 200) {
 
 async function fetchJson(url, timeout = 18000) {
   const response = await fetch(url, {
-    headers: {Accept:"application/json", "User-Agent":"Copa-2026-Painel-Premium/7.1"},
+    headers: {Accept:"application/json", "User-Agent":"Copa-2026-Painel-Premium/7.2"},
     cache: "no-store",
     signal: AbortSignal.timeout(timeout)
   });
@@ -86,7 +86,7 @@ async function fetchText(url, timeout = 18000) {
     headers: {
       Accept:"text/html,application/xhtml+xml",
       "Accept-Language":"pt-BR,pt;q=0.9,en;q=0.7",
-      "User-Agent":"Mozilla/5.0 (compatible; Copa-2026-Painel-Premium/7.1)"
+      "User-Agent":"Mozilla/5.0 (compatible; Copa-2026-Painel-Premium/7.2)"
     },
     cache:"no-store",
     signal:AbortSignal.timeout(timeout)
@@ -387,6 +387,32 @@ async function fetchCommunityData() {
   return {provider:"WorldCup26 Community API", matches};
 }
 
+function validateScorers(items) {
+  if (!Array.isArray(items)) return [];
+  const officialMap = new Map(OFFICIAL_SCORERS.map(item => [`${normalizeKey(item.name)}|${item.team}`, item]));
+  return items
+    .map(item => {
+      const name = canonicalScorerName(item.name);
+      const team = cleanCode(item.team);
+      const key = `${normalizeKey(name)}|${team}`;
+      const trusted = officialMap.get(key);
+      const rawGoals = numberValue(item.goals);
+      const rawAssists = numberValue(item.assists);
+      const goals = Number.isFinite(rawGoals) ? rawGoals : trusted?.goals;
+      if (!name || !team || !Number.isFinite(goals)) return null;
+      if (goals < 0 || goals > 12) return null;
+      return {
+        name,
+        team,
+        goals,
+        ...(Number.isFinite(rawAssists) ? { assists: rawAssists } : Number.isFinite(trusted?.assists) ? { assists: trusted.assists } : {}),
+        ...(trusted?.image ? { image: trusted.image } : item.image ? { image:item.image } : {})
+      };
+    })
+    .filter(Boolean)
+    .sort((a,b) => b.goals - a.goals || (b.assists ?? -1) - (a.assists ?? -1) || a.name.localeCompare(b.name, "pt-BR"));
+}
+
 exports.handler = async () => {
   const failures = [];
   let liveData = null;
@@ -395,13 +421,25 @@ exports.handler = async () => {
 
   const scorerResult = await Promise.allSettled([fetchFifaScorers(), fetchGeScorers()]);
   if (scorerResult[0].status === "fulfilled") {
-    scorers = scorerResult[0].value;
-    scorerProvider = "FIFA oficial / estatísticas de jogadores";
-  } else if (scorerResult[1].status === "fulfilled") {
-    scorers = scorerResult[1].value;
-    scorerProvider = "ge / ranking de artilheiros";
-    failures.push(`FIFA: ${scorerResult[0].reason?.message || "falha desconhecida"}`);
-  } else {
+    const fifaScorers = validateScorers(scorerResult[0].value);
+    if (fifaScorers.length >= 10) {
+      scorers = fifaScorers;
+      scorerProvider = "FIFA oficial / estatísticas de jogadores";
+    } else {
+      failures.push("FIFA: poucos artilheiros válidos retornados");
+    }
+  }
+  if (scorerProvider.includes("snapshot") && scorerResult[1].status === "fulfilled") {
+    const geScorers = validateScorers(scorerResult[1].value);
+    if (geScorers.length >= 10) {
+      scorers = geScorers;
+      scorerProvider = "ge / ranking de artilheiros";
+    } else {
+      failures.push("ge: poucos artilheiros válidos retornados");
+    }
+    if (scorerResult[0].status !== "fulfilled") failures.push(`FIFA: ${scorerResult[0].reason?.message || "falha desconhecida"}`);
+  }
+  if (scorerProvider.includes("snapshot") && scorerResult[0].status !== "fulfilled" && scorerResult[1].status !== "fulfilled") {
     failures.push(`FIFA: ${scorerResult[0].reason?.message || "falha desconhecida"}`);
     failures.push(`Artilharia ge: ${scorerResult[1].reason?.message || "falha desconhecida"}`);
   }

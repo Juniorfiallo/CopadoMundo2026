@@ -1,14 +1,15 @@
 (() => {
   "use strict";
 
-  const STORAGE_KEY = "copa2026-tracker-v1";
+  const STORAGE_KEY = "copa2026-tracker-v7-2";
+  const LEGACY_STORAGE_KEYS = ["copa2026-tracker-v1", "copa2026-tracker-v7-0", "copa2026-tracker-v7-1"];
   const baseData = window.COPA_DATA;
   const clone = (value) => typeof structuredClone === "function"
     ? structuredClone(value)
     : JSON.parse(JSON.stringify(value));
 
   const REMOTE_SCORER_PREFIX = "remote-scorer-";
-  const DATA_VERSION = 7.1;
+  const DATA_VERSION = 7.2;
   const MANUAL_MATCH_EVENT_OVERRIDES = Object.freeze({
     m83: [
       {team:"CRO", player:"Ivan Perišić", minute:"53", type:"goal"},
@@ -114,6 +115,15 @@
     return `${normalizeNameKey(name)}|${String(teamCode || "").toUpperCase()}`;
   }
 
+  function isFeaturedScorer(item) {
+    return FEATURED_SCORER_KEYS.includes(scorerKey(item?.name, item?.team)) && Boolean(scorerImageFor(item));
+  }
+
+  function normalizeAssists(value) {
+    const n = safeNumber(value);
+    return n === null ? null : n;
+  }
+
   function normalizeScorers(items) {
     const merged = new Map();
     const add = (item, index, fromSeed = false) => {
@@ -126,8 +136,8 @@
         name,
         team: teamCode,
         goals: safeNumber(item?.goals) ?? 0,
-        assists: safeNumber(item?.assists),
-        image: item?.image || null
+        assists: normalizeAssists(item?.assists),
+        image: item?.image || scorerImageMap[normalizeNameKey(name)] || null
       };
       const current = merged.get(key);
       if (!current) {
@@ -199,6 +209,26 @@
   const LIVE_UPDATE_ENDPOINT = "/.netlify/functions/update-copa";
   const COMMUNITY_GAMES_URL = "https://worldcup26.ir/get/games";
   const COMMUNITY_TEAMS_URL = "https://worldcup26.ir/get/teams";
+  const FEATURED_SCORER_KEYS = Object.freeze([
+    "lionel messi|ARG",
+    "kylian mbappe|FRA",
+    "erling haaland|NOR",
+    "harry kane|ENG",
+    "ismaila sarr|SEN",
+    "julian quinones|MEX",
+    "mikel oyarzabal|ESP",
+    "ousmane dembele|FRA",
+    "vinicius junior|BRA",
+    "brian brobbey|NED",
+    "cody gakpo|NED",
+    "cristiano ronaldo|POR",
+    "deniz undav|GER",
+    "folarin balogun|USA",
+    "ismael saibari|MAR",
+    "johan manzambi|SUI",
+    "jonathan david|CAN",
+    "matheus cunha|BRA"
+  ]);
 
   const stageNames = {
     GROUP: "Fase de grupos",
@@ -334,15 +364,18 @@
     return [...state.scorers].sort(scorerDisplayComparator);
   }
 
+  function featuredSortedScorers() {
+    return normalizeScorers(state.scorers)
+      .filter(isFeaturedScorer)
+      .sort(scorerDisplayComparator);
+  }
+
   function mainCarouselScorers() {
-    return sortedScorers().slice(0, 10);
+    return featuredSortedScorers().slice(0, 10);
   }
 
   function contenderCarouselScorers() {
-    const topKeys = new Set(mainCarouselScorers().map(item => scorerKey(item.name, item.team)));
-    return sortedScorers()
-      .filter(item => !topKeys.has(scorerKey(item.name, item.team)) && scorerImageFor(item))
-      .slice(0, 5);
+    return featuredSortedScorers().slice(10, 15);
   }
 
   function buildKnockoutGoalScorerMap(goalEventsByMatch) {
@@ -544,9 +577,14 @@
 
   function loadSaved() {
     try {
+      LEGACY_STORAGE_KEYS.forEach(key => localStorage.removeItem(key));
       const raw = localStorage.getItem(STORAGE_KEY);
       if (!raw) return;
       const saved = JSON.parse(raw);
+      if (Number(saved.version || 0) !== DATA_VERSION) {
+        localStorage.removeItem(STORAGE_KEY);
+        return;
+      }
 
       if (!savedStructureIsCompatible(saved)) {
         console.warn("Dados locais incompatíveis foram reparados automaticamente.");
@@ -1180,7 +1218,7 @@
 
     const clean = [...merged.values()].filter(item => (item.goals || 0) > 0);
     scorerSeed = normalizeScorers(clean);
-    scorerBaselineGoalEvents = normalizeGoalEvents(baseData.goalEvents || {});
+    scorerBaselineGoalEvents = normalizeGoalEvents(state.goalEvents || baseData.goalEvents || {});
     state.scorers = normalizeScorers(scorerSeed);
     refreshScorersFromGoalEvents();
     return clean.length;
@@ -1496,7 +1534,7 @@
 
   function renderTopScorers() {
     const activeTeams = getActiveTeamCodes();
-    const topTen = sortedScorers().slice(0, 10);
+    const topTen = featuredSortedScorers().slice(0, 10);
     const rows = topTen.map((item, index) => {
       const selection = team(item.team);
       const active = activeTeams.has(item.team);
@@ -1590,7 +1628,7 @@
     const container = document.getElementById("contenderCarousel");
     if (!container) return;
     const players = contenderCarouselScorers();
-    const ordered = sortedScorers();
+    const ordered = featuredSortedScorers();
     if (!players.length) {
       container.innerHTML = `<div class="scorer-carousel__heading"><div><p class="eyebrow">NA BRIGA</p><h4>Outros artilheiros</h4></div></div><div class="empty-state">Nenhum outro jogador ativo com três gols neste momento.</div>`;
       return;
@@ -2066,7 +2104,9 @@
       if (!confirm("Restaurar todos os resultados para os dados iniciais? Seu progresso salvo será substituído.")) return;
       state.groupMatches = clone(baseData.groupMatches);
       state.knockoutMatches = clone(baseData.knockoutMatches);
-      state.scorers = normalizeScorers(baseData.topScorers || []);
+      scorerSeed = normalizeScorers(baseData.topScorers || []);
+      scorerBaselineGoalEvents = normalizeGoalEvents(baseData.goalEvents || {});
+      state.scorers = normalizeScorers(scorerSeed);
       state.goalEvents = normalizeGoalEvents(baseData.goalEvents || {});
       applyManualMatchEventOverrides();
       localStorage.removeItem(STORAGE_KEY);

@@ -2308,10 +2308,10 @@ body[data-print-format="a4"] .poster-shell { padding: 2mm !important; }
 
 #dataNote[hidden] { display: none !important; }
 
-/* v7.1 — correções de layout, assistências e preenchimento das imagens */
+/* v7.2 — bloqueio de artilharia irreal e carrosséis full-frame */
 .scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__viewport {
   width: 100%;
-  height: clamp(560px, 46vw, 820px) !important;
+  height: clamp(620px, 54vw, 900px) !important;
   aspect-ratio: auto;
   min-height: 0;
 }
@@ -2327,24 +2327,26 @@ body[data-print-format="a4"] .poster-shell { padding: 2mm !important; }
   padding: 0 !important;
   object-fit: cover !important;
 }
-.scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__photo { transform: scale(1.06); }
-.scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__slide.is-active .scorer-carousel__photo { transform: scale(1.08); }
+.scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__photo { transform: scale(1.10); }
+.scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__slide.is-active .scorer-carousel__photo { transform: scale(1.12); }
 .scorer-carousel--mini .scorer-carousel__viewport {
   width: 100%;
-  height: clamp(520px, 42vw, 760px) !important;
+  height: clamp(560px, 48vw, 820px) !important;
   aspect-ratio: auto;
   min-height: 0;
 }
 .scorer-carousel--mini .scorer-carousel__backdrop { display: none; }
-.scorer-carousel--mini .scorer-carousel__photo { transform: scale(1.03); }
+.scorer-carousel--mini .scorer-carousel__photo { transform: scale(1.06); }
 .scorer-carousel__placeholder { padding: 24px; }
 .scorer-carousel__placeholder strong { max-width: 12ch; }
 @media (max-width: 760px) {
-  .scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__viewport { height: min(82vh, 720px) !important; }
-  .scorer-carousel--mini .scorer-carousel__viewport { height: min(76vh, 620px) !important; }
+  .scorer-carousel:not(.scorer-carousel--mini) .scorer-carousel__viewport { height: min(86vh, 760px) !important; }
+  .scorer-carousel--mini .scorer-carousel__viewport { height: min(80vh, 680px) !important; }
   .scorer-carousel__assists {
     right: 18px;
     bottom: 104px;
     padding: 7px 10px;
   }
 }
+
+.brand-card--logo-card img, .spotlight-card__media img[src$="logo-oficial.png"] { object-fit: cover !important; object-position: center !important; padding: 0 !important; background: transparent !important; }
